@@ -2,15 +2,20 @@
 
 let aws = require("aws-sdk"),
     tar = require("tar"),
+    fs = require("fs"),
     configuration = require("./configuration.json"),
     s3Task = require("./tasks/s3.js");
 
-let extractionLocation = "/tmp/deployment";
+let localRoot = "/tmp/deployment",
+    extractionLocation = localRoot + "/extract";
 
 module.exports.lambda = function(evtData, context, callback) {
-    // Assume only one item triggering at a time
-console.log(evtData.Records[0].s3);
-    extractFiles(evtData.Records[0].s3)
+    cleanRoot()
+        .then(() => {
+            // Assume only one item triggering at a time
+            return extractFiles(evtData.Records[0].s3)
+        })
+        // MISSING: Load configuration from extracted files
         .then(() => {
             return runTasks();
         })
@@ -21,6 +26,34 @@ console.log(evtData.Records[0].s3);
             console.log(err);
             callback(err);
         });
+}
+
+function cleanRoot() {
+    return new Promise((resolve, reject) => {
+        fs.stat(localRoot, (err, stats) => {
+            if (!!err && (err.message.search(/no such file or directory/g) >= 0))
+                resolve(null);
+            else if (!!err)
+                reject(err);
+            else
+                resolve(stats);
+        });
+    })
+    .then((stats) => {
+        if (!stats)
+            return null;
+        else {
+            // Delete the existing directory
+            return new Promise((resolve, reject) => {
+                fs.rmdir(localRoot, (err) => {
+                    if (!!err)
+                        reject(err);
+                    else
+                        resolve();
+                });
+            });
+        }
+    })
 }
 
 function extractFiles(s3Description) {
