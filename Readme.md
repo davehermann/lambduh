@@ -19,13 +19,19 @@ Necessary Configuration:
             + `arn:aws:s3:::`*bucket-name/key-if-any/**
 + Lambda Event Source
     + S3
-        + For the bucket containing your source tarballs
-        + On *Object Created >> Put*
-        + *Suffix*: tar
-        + **Recommend:** *Prefix* of your key path if you use one
+        + To support tarballs
+            + On *Object Created >> Put*
+            + *Suffix*: `tar`
+            + **Recommend:** *Prefix* of your key path if you use one
+        + To support Gzipped tarballs
+            + On *Object Created >> Put*
+            + *Suffix*: `tar.gz`
+            + **Recommend:** *Prefix* of your key path if you use one
 
 To do:
 
++ General
+    + Support Zip
 + S3 Task
     + Clean up removed files
 + Lambda Task

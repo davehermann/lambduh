@@ -4,6 +4,7 @@ let aws = require("aws-sdk"),
     tar = require("tar"),
     fs = require("fs"),
     rimraf = require("rimraf"),
+    zlib = require("zlib"),
     s3Task = require("./tasks/s3.js");
 
 let localRoot = "/tmp/deployment",
@@ -47,7 +48,7 @@ function cleanRoot() {
         else {
             // Delete the existing directory
             return new Promise((resolve, reject) => {
-                rimraf([localRoot], (err) => {
+                rimraf(localRoot, (err) => {
                     if (!!err)
                         reject(err);
                     else
@@ -63,19 +64,32 @@ function extractFiles(s3Description) {
         // Get the file
         let s3 = new aws.S3({ apiVersion: '2006-03-01' });
 
-        let extract = tar.Extract({ path: extractionLocation })
-            .on("error", function(err) {
-                console.log(err);
-                reject(err);
-            })
-            .on("end", function() {
-                console.log("Extract Complete");
-                resolve();
-            });
+        if (s3Description.object.key.search(/\.tar/g) >= 0) {
+            // Tarballs
+            let extract = tar.Extract({ path: extractionLocation })
+                .on("error", function(err) {
+                    console.log(err);
+                    reject(err);
+                })
+                .on("end", function() {
+                    console.log("Extract Complete");
+                    resolve();
+                });
 
-        s3.getObject({ Bucket: s3Description.bucket.name, Key: s3Description.object.key })
-            .createReadStream()
-            .pipe(extract);
+            if (s3Description.object.key.search(/\.gz/g) >= 0) {
+                // Gzipped Tarballs
+                let gunzip = zlib.createGunzip();
+
+                var s3Stream = s3.getObject({ Bucket: s3Description.bucket.name, Key: s3Description.object.key })
+                    .createReadStream()
+                    .pipe(gunzip)
+                    .pipe(extract);
+            } else {
+                var s3Stream = s3.getObject({ Bucket: s3Description.bucket.name, Key: s3Description.object.key })
+                    .createReadStream()
+                    .pipe(extract);
+            }
+        }
     });
 }
 
