@@ -3,7 +3,7 @@
 let aws = require("aws-sdk"),
     tar = require("tar"),
     fs = require("fs"),
-    configuration = require("./configuration.json"),
+    rimraf = require("rimraf"),
     s3Task = require("./tasks/s3.js");
 
 let localRoot = "/tmp/deployment",
@@ -15,9 +15,11 @@ module.exports.lambda = function(evtData, context, callback) {
             // Assume only one item triggering at a time
             return extractFiles(evtData.Records[0].s3)
         })
-        // MISSING: Load configuration from extracted files
         .then(() => {
-            return runTasks();
+            return loadConfiguration();
+        })
+        .then((configuration) => {
+            return runTasks(configuration);
         })
         .then(() => {
             callback();
@@ -45,7 +47,7 @@ function cleanRoot() {
         else {
             // Delete the existing directory
             return new Promise((resolve, reject) => {
-                fs.rmdir(localRoot, (err) => {
+                rimraf([localRoot], (err) => {
                     if (!!err)
                         reject(err);
                     else
@@ -77,7 +79,43 @@ function extractFiles(s3Description) {
     });
 }
 
-function runTasks() {
+function loadConfiguration() {
+    return new Promise((resolve, reject) => {
+        // Check extracted files for "lamb_duh.json"
+        fs.readFile(extractionLocation + "/lamb_duh.json", "utf8", (err, configurationFileContents) => {
+            if (!!err && (err.message.search(/no such file or directory/g) >= 0))
+                resolve(null);
+            else if (!!err)
+                reject(err);
+            else
+                resolve(configurationFileContents);
+        });
+    })
+    .then((extractConfiguration) => {
+        if (!!extractConfiguration)
+            return extractConfiguration;
+        else
+            return new Promise((resolve, reject) => {
+                // Check the function local files for "configuration.json"
+                fs.readFile(__dirname + "/configuration.json", "utf8", (err, configurationFileContents) => {
+                    if (!!err && (err.message.search(/no such file or directory/g) >= 0))
+                        resolve(null);
+                    else if (!!err)
+                        reject(err);
+                    else
+                        resolve(configurationFileContents);
+                });
+            });
+    })
+    .then((configurationFileContents) => {
+        if (!!configurationFileContents)
+            return JSON.parse(configurationFileContents);
+        else
+            throw "No configuration file found in either extracted source or function root";
+    });
+}
+
+function runTasks(configuration) {
     let taskList = [];
 
     configuration.tasks.forEach((task) => {
