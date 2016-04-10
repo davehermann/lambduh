@@ -11,12 +11,18 @@ Necessary Configuration:
         + Allow
             + s3:GetObject
         + Resource
-            + `arn:aws:s3:::`*bucket-name/key-if-any/**
+            + `arn:aws:s3:::`*source-bucket-name/key-if-any/**
     + S3 - Write Files for S3 Tasks
         + Allow
+            + s3:DeleteObject
             + s3:PutObject
         + Resource
-            + `arn:aws:s3:::`*bucket-name/key-if-any/**
+            + `arn:aws:s3:::`*destination-bucket-name/key-if-any/**
+    + S3 - List files for S3 Tasks
+        + Allow
+            + s3:ListBucket
+        + Resource
+            + `arn:aws:s3:::`*destination-bucket-name/key-if-any*
 + Lambda Event Source
     + S3
         + To support tarballs

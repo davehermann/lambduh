@@ -6,7 +6,12 @@ let fs = require("fs"),
 function s3Task(task, extractionLocation) {
     return new Promise((resolve, reject) => {
         // Read the files in the path
-        readDirectory(extractionLocation + task.source, extractionLocation + task.source, task)
+        let sourceKeys = [];
+
+        readDirectory(extractionLocation + task.source, extractionLocation + task.source, task, sourceKeys)
+            .then(() => {
+                return cleanUnusedFiles(sourceKeys, task);
+            })
             .then(() => {
                 resolve();
             })
@@ -16,7 +21,7 @@ function s3Task(task, extractionLocation) {
     });
 }
 
-function readDirectory(path, rootPath, task) {
+function readDirectory(path, rootPath, task, sourceKeys) {
     return new Promise((resolve, reject) => {
         fs.readdir(path, (err, files) => {
             if (!!err)
@@ -26,11 +31,11 @@ function readDirectory(path, rootPath, task) {
         });
     })
     .then((files) => {
-        return directoryContents(files, path, rootPath, task);
+        return directoryContents(files, path, rootPath, task, sourceKeys);
     });
 }
 
-function directoryContents(files, path, rootPath, task) {
+function directoryContents(files, path, rootPath, task, sourceKeys) {
     let fileHandler = [];
 
     files.forEach((fileName) => {
@@ -38,20 +43,22 @@ function directoryContents(files, path, rootPath, task) {
         let stats = fs.statSync(objectPath);
 
         if (stats.isFile())
-            fileHandler.push(handleFile(rootPath, objectPath, task));
+            fileHandler.push(handleFile(rootPath, objectPath, task, sourceKeys));
         else if (stats.isDirectory())
-            fileHandler.push(handleDirectory(rootPath, objectPath, task));
+            fileHandler.push(handleDirectory(rootPath, objectPath, task, sourceKeys));
     });
 
     return Promise.all(fileHandler);
 }
 
-function handleFile(rootPath, filePath, task) {
+function handleFile(rootPath, filePath, task, sourceKeys) {
     let relativePath = filePath.replace(rootPath + "/", "");
     if (!!task.dest.key)
         relativePath = task.dest.key + "/" + relativePath;
 
-console.log(`${filePath} is a file going to ${relativePath} in ${task.dest.bucket}`);
+    sourceKeys.push(relativePath);
+
+// console.log(`${filePath} is a file going to ${relativePath} in ${task.dest.bucket}`);
 
     return new Promise((resolve, reject) => {
         let s3 = new aws.S3({ apiVersion: '2006-03-01' });
@@ -76,11 +83,67 @@ console.log(`${filePath} is a file going to ${relativePath} in ${task.dest.bucke
     });
 }
 
-function handleDirectory(rootPath, directoryPath, task) {
-console.log(`${directoryPath} is a directory`);
+function handleDirectory(rootPath, directoryPath, task, sourceKeys) {
+// console.log(`${directoryPath} is a directory`);
 
-    return readDirectory(directoryPath, rootPath, task);
+    return readDirectory(directoryPath, rootPath, task, sourceKeys);
     // return null;
+}
+
+function cleanUnusedFiles(sourceKeys, task) {
+    return new Promise((resolve, reject) => {
+        // Load the entire list of keys from S3
+        var keyList = { Bucket: task.dest.bucket };
+        if (!!task.dest.key)
+            keyList.Prefix = task.dest.key;
+
+        let s3 = new aws.S3({ apiVersion: '2006-03-01' });
+
+        let foundKeys = [];
+
+        (function loadKeys(lastKey) {
+            if (!!lastKey)
+                keyList.Marker = lastKey;
+            s3.listObjects(keyList, (err, s3Data) => {
+                if (!!err)
+                    reject(err);
+                else {
+                    s3Data.Contents.forEach((s3Object) => {
+                        foundKeys.push(s3Object.Key);
+                    });
+
+                    if (s3Data.IsTruncated)
+                        loadKeys(s3Data.Contents[s3Data.Contents.length - 1].Key);
+                    else {
+                        resolve(foundKeys);
+                    }
+                }
+            });
+        })(null);
+    })
+    .then((foundKeys) => {
+        return new Promise((resolve, reject) => {
+            let s3 = new aws.S3({ apiVersion: '2006-03-01' });
+
+            (function removeObject() {
+                if (foundKeys.length > 0) {
+                    let checkKey = foundKeys.shift();
+
+                    if (sourceKeys.indexOf(checkKey) < 0) {
+                        s3.deleteObject({ Bucket: task.dest.bucket, Key: checkKey }, (err, s3Data) => {
+                            if (!!err)
+                                reject(err);
+                            else {
+                                removeObject();
+                            }
+                        });
+                    } else
+                        removeObject();
+                } else
+                    resolve();
+            })();
+        });
+    });
 }
 
 module.exports = s3Task;
