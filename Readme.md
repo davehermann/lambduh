@@ -23,6 +23,13 @@ Necessary Configuration:
             + s3:ListBucket
         + Resource
             + `arn:aws:s3:::`*destination-bucket-name/key-if-any*
+    + Lambda
+        + Allow
+            + iam:PassRole
+            + lambda:createFunction
+            + lambda:listFunctions
+        + Resource
+            + `*`
 + Lambda Event Source
     + S3
         + To support tarballs

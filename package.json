@@ -6,6 +6,8 @@
   "main": "deploy.js",
   "author": "Dave Hermann <hermann.dp+github@gmail.com>",
   "dependencies": {
+    "adm-zip": "^0.4.7",
+    "mkdirp": "^0.5.1",
     "rimraf": "^2.5.2",
     "tar": "^2.2.1"
   }

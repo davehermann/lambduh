@@ -5,7 +5,8 @@ let aws = require("aws-sdk"),
     fs = require("fs"),
     rimraf = require("rimraf"),
     zlib = require("zlib"),
-    s3Task = require("./tasks/s3.js");
+    s3Task = require("./tasks/s3.js"),
+    lambdaTask = require("./tasks/lambda.js");
 
 let localRoot = "/tmp/deployment",
     extractionLocation = localRoot + "/extract";
@@ -138,6 +139,10 @@ function runTasks(configuration) {
         switch (task.type) {
             case "S3":
                 taskPromise = s3Task(task, extractionLocation);
+                break;
+
+            case "Lambda":
+                taskPromise = lambdaTask(task, extractionLocation, localRoot, configuration);
                 break;
         }
 
