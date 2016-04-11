@@ -103,9 +103,37 @@ console.log("Creating Lambda Function: ", newFunction);
                         reject(err);
                     else {
 console.log(data);
-                        resolve(data);
+                        resolve();
                     }
                 })
+            } else {
+                let codeUpdate = new (function() {
+                    this.FunctionName = functionName;
+                    this.ZipFile = zip.toBuffer();
+                })();
+                lambda.updateFunctionCode(codeUpdate, (err, data) => {
+                    if (!!err)
+                        reject(err)
+                    else {
+console.log(data);
+                        let configurationUpdate = new (function() {
+                            this.FunctionName = functionName;
+                            this.Role = functionDefinition.iamRoleArn;
+                            this.Handler = `${functionName}${path.dirname(functionDefinition.source)}/${path.basename(functionDefinition.source, path.extname(functionDefinition.source))}.lambda`;
+                            this.MemorySize = !!functionDefinition.memorySize ? functionDefinition.memorySize : 128;
+                            this.Timeout = !!functionDefinition.timeout ? functionDefinition.timeout : 5;
+                        })();
+
+                        lambda.updateFunctionConfiguration(configurationUpdate, (err, data) => {
+                            if (!!err)
+                                reject(err);
+                            else {
+console.log(data);
+                                resolve();
+                            }
+                        })
+                    }
+                });
             }
 
 //     }

@@ -26,8 +26,10 @@ Necessary Configuration:
     + Lambda
         + Allow
             + iam:PassRole
-            + lambda:createFunction
-            + lambda:listFunctions
+            + lambda:CreateFunction
+            + lambda:ListFunctions
+            + lambda:updateFunctionCode
+            + lambda:updateFunctionConfiguration
         + Resource
             + `*`
 + Lambda Event Source
