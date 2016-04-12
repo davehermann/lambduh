@@ -146,4 +146,4 @@ function cleanUnusedFiles(sourceKeys, task) {
     });
 }
 
-module.exports = s3Task;
+module.exports.Task = s3Task;

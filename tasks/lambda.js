@@ -5,7 +5,8 @@ let aws = require("aws-sdk"),
     admZip = require("adm-zip"),
     lambda = new aws.Lambda({ apiVersion: "2015-03-31" }),
     path = require("path"),
-    mkdirp = require("mkdirp");
+    mkdirp = require("mkdirp"),
+    uuid = require("uuid");
 
 function lambdaTask(task, extractionLocation, localRoot, configuration) {
     return allExistingFunctions()
@@ -150,4 +151,42 @@ console.log(data);
     });
 }
 
-module.exports = lambdaTask;
+function functionConfiguration(functionName) {
+    return new Promise((resolve, reject) => {
+        lambda.getFunctionConfiguration({ FunctionName: functionName }, (err, data) => {
+            if (!!err)
+                reject(err);
+            else {
+console.log("Configuration: ", data);
+                resolve(data);
+            }
+        });
+    });
+}
+
+function addEventInvocationPermission(functionArn, sourceArn, sourcePrincipal) {
+    return new Promise((resolve, reject) => {
+        let newPermission = new (function() {
+            this.FunctionName = functionArn;
+            this.StatementId = uuid.v4();
+            this.Action = "lambda:InvokeFunction";
+            this.Principal = sourcePrincipal;
+            this.SourceArn = sourceArn;
+        })();
+console.log("Add Lambda Permission: ", newPermission);
+        lambda.addPermission(newPermission, (err, data) => {
+            if (!!err) {
+console.log(err);
+                reject(err);
+            } else {
+console.log("Lambda Permission Added: ", data);
+                resolve(data);
+            }
+        });
+    });
+}
+
+module.exports.Task = lambdaTask;
+module.exports.AllFunctions = allExistingFunctions;
+module.exports.FunctionConfiguration = functionConfiguration;
+module.exports.AddEventPermission = addEventInvocationPermission;

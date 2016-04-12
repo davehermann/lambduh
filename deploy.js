@@ -6,13 +6,26 @@ let aws = require("aws-sdk"),
     rimraf = require("rimraf"),
     zlib = require("zlib"),
     s3Task = require("./tasks/s3.js"),
-    lambdaTask = require("./tasks/lambda.js");
+    lambdaTask = require("./tasks/lambda.js"),
+    apiGatewayTask = require("./tasks/apiGateway.js");
 
 let localRoot = "/tmp/deployment",
     extractionLocation = localRoot + "/extract";
 
 module.exports.lambda = function(evtData, context, callback) {
-    cleanRoot()
+    let awsRegion = null,
+        awsAccountId = null;
+
+    lambdaTask.FunctionConfiguration(context.functionName)
+        .then((functionConfiguration) => {
+            // Parse out the current region, and account ID
+            let arnParts = functionConfiguration.FunctionArn.split(":");
+            awsRegion = arnParts[3];
+            awsAccountId = arnParts[4];
+        })
+        .then(() => {
+            cleanRoot();
+        })
         .then(() => {
             // Assume only one item triggering at a time
             return extractFiles(evtData.Records[0].s3)
@@ -21,6 +34,9 @@ module.exports.lambda = function(evtData, context, callback) {
             return loadConfiguration();
         })
         .then((configuration) => {
+            configuration.awsRegion = awsRegion;
+            configuration.awsAccountId = awsAccountId;
+
             return runTasks(configuration);
         })
         .then(() => {
@@ -131,23 +147,36 @@ function loadConfiguration() {
 }
 
 function runTasks(configuration) {
-    let taskList = [];
+    return new Promise((resolve, reject) => {
+        (function processTask() {
+            if (configuration.tasks.length > 0) {
+                var task = configuration.tasks.shift();
 
-    configuration.tasks.forEach((task) => {
-        let taskPromise = null;
+                let taskPromise = null;
 
-        switch (task.type) {
-            case "S3":
-                taskPromise = s3Task(task, extractionLocation);
-                break;
+                switch (task.type) {
+                    case "S3":
+                        taskPromise = s3Task.Task(task, extractionLocation);
+                        break;
 
-            case "Lambda":
-                taskPromise = lambdaTask(task, extractionLocation, localRoot, configuration);
-                break;
-        }
+                    case "Lambda":
+                        taskPromise = lambdaTask.Task(task, extractionLocation, localRoot, configuration);
+                        break;
 
-        taskList.push(taskPromise);
-    })
+                    case "ApiGateway":
+                        taskPromise = apiGatewayTask.Task(task, configuration);
+                        break;
+                }
 
-    return Promise.all(taskList);
+                taskPromise
+                    .then(() => {
+                        processTask();
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    })
+            } else
+                resolve();
+        })();
+    });
 }
