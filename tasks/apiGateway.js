@@ -136,12 +136,45 @@ console.log("New Resource: ", data);
 }
 
 function addMethod(endpoint, resource, apiId) {
-    return new Promise((resolve, reject) => {
-        console.log("Resource: ", resource);
+    console.log("Resource: ", resource);
 
-        // Find or create the method
-        let useMethod = null;
+    return removeMethod(endpoint, resource, apiId)
+        .then(() => {
+            return new Promise((resolve, reject) => {
+                let newMethod = new (function() {
+                    this.httpMethod = endpoint.method.toUpperCase();
+                    this.resourceId = resource.id;
+                    this.restApiId = apiId;
+                    this.authorizationType = "NONE";
+
+                    if (!!endpoint.parameters && (endpoint.method.toUpperCase() == "GET")) {
+                        this.requestParameters = new (function() {
+                            endpoint.parameters.forEach((parameter) => {
+                                // Add the parameter with caching disabled
+                                this[`method.request.querystring.${parameter.name}`] = false;
+                            });
+                        })();
+                    }
+                })();
+                apiGateway.putMethod(newMethod, (err, data) => {
+                    if (!!err) {
+console.log(err);
+                        reject(err);
+                    } else {
+console.log("Created Method: ", data);
+                        resolve({ resource: resource, method: data });
+                    }
+                });
+            });
+        });
+}
+
+function removeMethod(endpoint, resource, apiId) {
+    return new Promise((resolve, reject) => {
+        // If the method exists, delete it before re-adding
         if (!!resource.resourceMethods && resource.resourceMethods[endpoint.method.toUpperCase()]) {
+            // If debugging, find the method first, and display details
+            /*
             let findMethod = new (function() {
                 this.httpMethod = endpoint.method.toUpperCase();
                 this.resourceId = resource.id;
@@ -151,35 +184,36 @@ function addMethod(endpoint, resource, apiId) {
                 if (!!err)
                     reject(err);
                 else {
-console.log("Found Method: ", data);
-if (!!data.methodResponses)
-    for (let code in data.methodResponses)
-        console.log("Method Response: ", code, data.methodResponses[code]);
+            console.log("Found Method: ", data);
+            if (!!data.methodResponses)
+            for (let code in data.methodResponses)
+            console.log("Method Response: ", code, data.methodResponses[code]);
 
-if (!!data.methodIntegration && !!data.methodIntegration.integrationResponses)
-    for (let code in data.methodIntegration.integrationResponses)
-        console.log("Integration Response: ", code, data.methodIntegration.integrationResponses[code]);
+            if (!!data.methodIntegration && !!data.methodIntegration.integrationResponses)
+            for (let code in data.methodIntegration.integrationResponses)
+            console.log("Integration Response: ", code, data.methodIntegration.integrationResponses[code]);
 
                     resolve({ resource: resource, method: data });
                 }
             });
-        } else {
-            let newMethod = new (function() {
-                this.httpMethod = endpoint.method.toUpperCase();
-                this.resourceId = resource.id;
+            */
+            let removeMethod = new (function() {
                 this.restApiId = apiId;
-                this.authorizationType = "NONE";
+                this.resourceId = resource.id;
+                this.httpMethod = endpoint.method.toUpperCase();
             })();
-            apiGateway.putMethod(newMethod, (err, data) => {
+console.log("Deleting Method: ", removeMethod);
+            apiGateway.deleteMethod(removeMethod, (err, data) => {
                 if (!!err) {
 console.log(err);
                     reject(err);
                 } else {
-console.log("Created Method: ", data);
-                    resolve({ resource: resource, method: data });
+console.log("Deleted: ", data);
+                    resolve(data);
                 }
             });
-        }
+        } else
+            resolve();
     });
 }
 
@@ -191,6 +225,24 @@ function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, c
             this.restApiId = apiId;
             this.type = "AWS";
             this.integrationHttpMethod = "POST";
+
+            if (!!endpoint.parameters && (endpoint.method.toUpperCase() == "GET")) {
+                this.requestTemplates = new (function() {
+                    // Create a JSON string with each parameter
+                    let parameterList = [];
+                    endpoint.parameters.forEach((parameter) => {
+                        let paramString = `\"${parameter.name}\":`;
+                        if (!parameter.notString)
+                            paramString += "\"";
+                        paramString += `$input.params(\'${parameter.name}\')`;
+                        if (!parameter.notString)
+                            paramString += "\"";
+
+                        parameterList.push(paramString)
+                    });
+                    this["application/json"] = `{${parameterList.join(",")}}`
+                })();
+            }
         })();
 
         // Find the function ARN
