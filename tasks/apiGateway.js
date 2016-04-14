@@ -147,14 +147,20 @@ function addMethod(endpoint, resource, apiId) {
                     this.restApiId = apiId;
                     this.authorizationType = "NONE";
 
-                    if (!!endpoint.parameters && (endpoint.method.toUpperCase() == "GET")) {
+                    if (!!endpoint.headers || (!!endpoint.parameters && (endpoint.method.toUpperCase() == "GET")))
                         this.requestParameters = new (function() {
-                            endpoint.parameters.forEach((parameter) => {
-                                // Add the parameter with caching disabled
-                                this[`method.request.querystring.${parameter.name}`] = false;
-                            });
+                            if (!!endpoint.parameters)
+                                endpoint.parameters.forEach((parameter) => {
+                                    // Add the parameter with caching disabled
+                                    this[`method.request.querystring.${parameter.name}`] = false;
+                                });
+
+                            if (!!endpoint.headers)
+                                endpoint.headers.forEach((header) => {
+                                    // Add the parameter with caching disabled
+                                    this[`method.request.header.${header.name}`] = false;
+                                });
                         })();
-                    }
                 })();
                 apiGateway.putMethod(newMethod, (err, data) => {
                     if (!!err) {
@@ -229,18 +235,16 @@ function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, c
             if (!!endpoint.parameters && (endpoint.method.toUpperCase() == "GET")) {
                 this.requestTemplates = new (function() {
                     // Create a JSON string with each parameter
-                    let parameterList = [];
+                    let mappingTemplateItems = [];
                     endpoint.parameters.forEach((parameter) => {
-                        let paramString = `\"${parameter.name}\":`;
-                        if (!parameter.notString)
-                            paramString += "\"";
-                        paramString += `$input.params(\'${parameter.name}\')`;
-                        if (!parameter.notString)
-                            paramString += "\"";
-
-                        parameterList.push(paramString)
+                        mappingTemplateItems.push(inputMapping(parameter));
                     });
-                    this["application/json"] = `{${parameterList.join(",")}}`
+
+                    endpoint.headers.forEach((header) => {
+                        mappingTemplateItems.push(inputMapping(header));
+                    });
+
+                    this["application/json"] = `{${mappingTemplateItems.join(",")}}`
                 })();
             }
         })();
@@ -277,6 +281,17 @@ console.log("Integration Added: ", data);
                 return integration;
             });
     });
+}
+
+function inputMapping(parameter) {
+    let paramString = `\"${parameter.name}\":`;
+    if (!parameter.notString)
+        paramString += "\"";
+    paramString += `$input.params(\'${parameter.name}\')`;
+    if (!parameter.notString)
+        paramString += "\"";
+
+    return paramString;
 }
 
 function integrationResponse(endpoint, integration, resource, method, apiId, configuration) {
