@@ -1,11 +1,10 @@
 "use strict";
 
 let aws = require("aws-sdk"),
-    fs = require("fs"),
+    fs = require("fs-extra"),
     admZip = require("adm-zip"),
     lambda = new aws.Lambda({ apiVersion: "2015-03-31" }),
     path = require("path"),
-    mkdirp = require("mkdirp"),
     uuid = require("uuid");
 
 function lambdaTask(task, extractionLocation, localRoot, configuration) {
@@ -18,8 +17,6 @@ function lambdaTask(task, extractionLocation, localRoot, configuration) {
             });
 
             return Promise.all(definitionList);
-
-            return null;
         })
         // .catch((err) => {
         //     throw err;
@@ -43,112 +40,199 @@ console.log(fData);
     });
 }
 
-function deployFunction(functionDefinition, existingFunctions, configuration, extractionLocation, localRoot) {
+function copyNodeModules(extractionLocation, codeLocation) {
     return new Promise((resolve, reject) => {
-console.log(functionDefinition);
-        let functionName = functionDefinition.name;
-        if (!!configuration.applicationName)
-            functionName = configuration.applicationName + "_" + functionName;
-
-        let functionExists = existingFunctions.Functions.some((item) => { return item.FunctionName.toLowerCase() == functionName.toLowerCase() });
-
-        // Copy code files, dependencies, and all node_modules to a location specific to function
-        let codeLocation = `${localRoot}/packaging/${functionName}`;
-console.log("Copying ", extractionLocation + functionDefinition.source, " to ", codeLocation + functionDefinition.source);
-
-        // Create the directory
-        mkdirp.sync(`${codeLocation}${path.dirname(functionDefinition.source)}`);
-
-        // Write the file
-        let fileWriter = fs.createWriteStream(codeLocation + functionDefinition.source);
-        fileWriter.on("error", (err) => {
-            reject(err);
+        fs.stat(`${extractionLocation}/node_modules`, (err, stats) => {
+            if (!err) {
+                fs.copy(`${extractionLocation}/node_modules`, `${codeLocation}/node_modules`, (err) => {
+                    if (!!err)
+                        reject(err);
+                    else
+                        resolve();
+                });
+            } else if (!!err && (err.message.search(/no such file or directory/g) >= 0)) {
+                resolve();
+            } else
+                reject(err);
         });
-        fileWriter.on("finish", () => {
-            // Zip the entire function directory
-            // NOTE: ADM-Zip doesn't work correctly for the helper-functions addLocalFile and addLocalFolder
-            //  http://stackoverflow.com/questions/33296396/adm-zip-zipping-files-as-directories
-            // Use addFile manually configuring the permissions
-            let zip = new admZip();
-            zip.addFile(`${functionName}${functionDefinition.source}`, fs.readFileSync(codeLocation + functionDefinition.source), "", 0o644 << 16);
+    });
+}
 
-console.log(zip.getEntries().map((item) => {
-    return `${item.isDirectory ? "Directory" : "File"}: ${item.entryName}`;
-}));
-//
-// zip.toBuffer(
-//     (buffZip) => {
-//
-// // Write the zip to S3
-// let s3 = new aws.S3();
-// s3.putObject({ Bucket: "pipeline-source.sourcerer.auction", Key: "zippedData.zip", Body: buffZip }, (err, data) => {
-//     if (!!err)
-//         reject(err);
-//     else {
+function addFilesToZip(directoryToScan, functionName) {
+    // Zip the entire function directory
+    // NOTE: ADM-Zip doesn't work correctly for the helper-functions addLocalFile and addLocalFolder
+    //  http://stackoverflow.com/questions/33296396/adm-zip-zipping-files-as-directories
+    // Use addFile manually configuring the permissions
+    let zip = new admZip();
 
-            if (!functionExists) {
-                // Create the function
-                let newFunction = new (function() {
+    return new Promise((resolve, reject) => {
+        let fileItems = [];
+        fs.walk(directoryToScan)
+            .on("data", (fsObject) => {
+                if (fsObject.stats.isFile())
+                    fileItems.push(fsObject);
+            })
+            .on("end", () => {
+                resolve(fileItems);
+            });
+    })
+    .then((fileItems) => {
+        fileItems.forEach((fsObject) => {
+            zip.addFile(`${functionName}${fsObject.path.replace(directoryToScan, "")}`, fs.readFileSync(`${fsObject.path}`), "", 0o644 << 16);
+        });
+
+        return zip;
+    });
+}
+
+function copyRequiredFile(codeLocation, extractionLocation, filePath) {
+    return new Promise((resolve, reject) => {
+console.log("Copying ", `${extractionLocation}${filePath}`, " to ", `${codeLocation}${filePath}`);
+
+        // // Create the directory
+        // fs.mkdirsSync(`${codeLocation}${path.dirname(filePath)}`);
+
+        fs.copy(`${extractionLocation}${filePath}`, `${codeLocation}${filePath}`, (err) => {
+            if (!!err)
+                reject(err);
+            else
+                resolve();
+        });
+    })
+    .then(() => {
+        // Read the source file, and extract any requires
+        let sourceFile = fs.readFileSync(`${codeLocation}${filePath}`, "utf8");
+
+        let foundRequires = sourceFile.match(/require\(\".+\"\)/g);
+        console.log("Requires: ", foundRequires);
+        let loadRequires = [];
+
+        if (!!foundRequires)
+            foundRequires.forEach((req) => {
+                let requireItem = req.match(/\(\"(.+)\"\)/g);
+                if (RegExp.$1.substr(0, 1) == ".")
+                    loadRequires.push(RegExp.$1);
+            });
+        console.log("Load: ", loadRequires);
+
+        return loadRequires;
+    })
+    .then((loadRequires) => {
+        if (loadRequires.length == 0)
+            return null;
+        else {
+            let pRequires = [];
+            loadRequires.forEach((req) => {
+                let loadFile = `${path.dirname(filePath)}/${req}`;
+                if (loadFile.search(/\.json$/) < 0)
+                    loadFile += ".js";
+
+                pRequires.push(copyRequiredFile(codeLocation, extractionLocation, loadFile));
+            });
+
+            return Promise.all(pRequires);
+        }
+    })
+    ;
+}
+
+function deployFunction(functionDefinition, existingFunctions, configuration, extractionLocation, localRoot) {
+console.log(functionDefinition);
+    let functionName = functionDefinition.name;
+    if (!!configuration.applicationName)
+        functionName = configuration.applicationName + "_" + functionName;
+
+    let functionExists = existingFunctions.Functions.some((item) => { return item.FunctionName.toLowerCase() == functionName.toLowerCase() });
+
+    let codeLocation = `${localRoot}/packaging/${functionName}`;
+
+    return copyNodeModules(extractionLocation, codeLocation)
+        .then(() => {
+            return copyRequiredFile(codeLocation, extractionLocation, functionDefinition.source);
+            // return new Promise((resolve, reject) => {
+// console.log("Copying ", extractionLocation + functionDefinition.source, " to ", codeLocation + functionDefinition.source);
+
+                // // Create the directory
+                // fs.mkdirsSync(`${codeLocation}${path.dirname(functionDefinition.source)}`);
+
+                // fs.copy(`${extractionLocation}${functionDefinition.source}`, `${codeLocation}${functionDefinition.source}`, (err) => {
+                //     if (!!err)
+                //         reject(err)
+                //     else {
+                //         resolve();
+                //     }
+                // });
+            // });
+        })
+        .then(() => {
+            return addFilesToZip(codeLocation, functionName)
+                .then((zip) => {
+                    let displayedNodeModules = 0;
+                    console.log("In Code Zip File: ", zip.getEntries().map((item) => {
+                        if (item.entryName.search(/node\_modules/gi) >= 0) {
+                            if (displayedNodeModules < 10) {
+                                displayedNodeModules++;
+                                return `Directory: node_modules with ${item.entryName}`;
+                            } else {
+                                return null;
+                            }
+                        } else
+                            return `${item.isDirectory ? "Directory" : "File"}: ${item.entryName}`;
+                    }).filter((item) => { return item !== null; }));
+
+                    return zip;
+                });
+        })
+        .then((zip) => {
+            return new Promise((resolve, reject) => {
+                let functionConfiguration = new (function() {
                     this.FunctionName = functionName;
-                    this.Runtime = "nodejs4.3";
                     this.Role = functionDefinition.iamRoleArn;
                     this.Handler = `${functionName}${path.dirname(functionDefinition.source)}/${path.basename(functionDefinition.source, path.extname(functionDefinition.source))}.lambda`;
                     this.MemorySize = !!functionDefinition.memorySize ? functionDefinition.memorySize : 128;
                     this.Timeout = !!functionDefinition.timeout ? functionDefinition.timeout : 5;
                 })();
-console.log("Creating Lambda Function: ", newFunction);
-                newFunction.Code ={ ZipFile: zip.toBuffer() }
 
-                lambda.createFunction(newFunction, (err, data) => {
-                    if (!!err)
-                        reject(err);
-                    else {
-console.log(data);
-                        resolve();
-                    }
-                })
-            } else {
-                let codeUpdate = new (function() {
-                    this.FunctionName = functionName;
-                    this.ZipFile = zip.toBuffer();
-                })();
-                lambda.updateFunctionCode(codeUpdate, (err, data) => {
-                    if (!!err)
-                        reject(err)
-                    else {
-console.log(data);
-                        let configurationUpdate = new (function() {
-                            this.FunctionName = functionName;
-                            this.Role = functionDefinition.iamRoleArn;
-                            this.Handler = `${functionName}${path.dirname(functionDefinition.source)}/${path.basename(functionDefinition.source, path.extname(functionDefinition.source))}.lambda`;
-                            this.MemorySize = !!functionDefinition.memorySize ? functionDefinition.memorySize : 128;
-                            this.Timeout = !!functionDefinition.timeout ? functionDefinition.timeout : 5;
-                        })();
+                if (!functionExists) {
+                    functionConfiguration.Runtime = "nodejs4.3";
+console.log("Creating Lambda Function: ", functionConfiguration);
+                    functionConfiguration.Code = { ZipFile: zip.toBuffer() };
 
-                        lambda.updateFunctionConfiguration(configurationUpdate, (err, data) => {
-                            if (!!err)
-                                reject(err);
-                            else {
-console.log(data);
-                                resolve();
-                            }
-                        })
-                    }
-                });
-            }
+                    lambda.createFunction(functionConfiguration, (err, data) => {
+                        if (!!err)
+                            reject(err);
+                        else {
+console.log("Function Created: ", data);
+                            resolve();
+                        }
+                    });
+                } else {
+console.log("Update Lambda Function: ", functionConfiguration);
+                    lambda.updateFunctionConfiguration(functionConfiguration, (err, data) => {
+                        if (!!err) {
+console.log("Configuration Update Error: ", err);
+                            reject(err);
+                        } else {
+console.log("Function Configuration Updated: ", data);
 
-//     }
-// });
-//     },
-//     (err) => {
-//         reject(err);
-//     }
-// )
-
+                            let codeUpdate = new (function() {
+                                this.FunctionName = functionName;
+                                this.ZipFile = zip.toBuffer();
+                            })();
+console.log("Updating code");
+                            lambda.updateFunctionCode(codeUpdate, (err, data) => {
+                                if (!!err)
+                                    reject(err);
+                                else {
+console.log("Function Code Updated: ", data);
+                                    resolve();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
         });
-
-        fs.createReadStream(extractionLocation + functionDefinition.source).pipe(fileWriter);
-    });
 }
 
 function functionConfiguration(functionName) {

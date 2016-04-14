@@ -7,7 +7,7 @@
   "author": "Dave Hermann <hermann.dp+github@gmail.com>",
   "dependencies": {
     "adm-zip": "^0.4.7",
-    "mkdirp": "^0.5.1",
+    "fs-extra": "^0.26.7",
     "rimraf": "^2.5.2",
     "tar": "^2.2.1",
     "uuid": "^2.0.1"
