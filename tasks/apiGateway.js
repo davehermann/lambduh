@@ -2,7 +2,8 @@
 
 let aws = require("aws-sdk"),
     apiGateway = new aws.APIGateway({ apiVersion: "2015-07-09" }),
-    lambdaTask = require("./lambda");
+    lambdaTask = require("./lambda"),
+    gatewayIntegration = require("./aws_apiGateway");
 
 function apiGatewayTask(task, configuration) {
     let existingFunctions = null;
@@ -76,12 +77,15 @@ function createMappings(task, apiId, existingResources, existingFunctions, confi
             .then((method) => {
                 return lambdaIntegration(endpoint, method.resource, method.method, apiId, existingFunctions, configuration);
             })
-            .then((integration) => {
-                return integrationResponse(endpoint, integration.integration, integration.resource, integration.method, apiId, configuration);
+            .then((resourceChain) => {
+                return methodResponse(endpoint, resourceChain, apiId, task);
             })
-            .then((response) => {
-                return methodResponse(endpoint, response.integrationResponse, response.integration, response.resource, response.method, apiId, configuration);
-            });
+            .then((resourceChain) => {
+                return integrationResponse(endpoint, resourceChain, apiId, task);
+            })
+            .then((resourceChain) => {
+                return addCorsMethod(endpoint, resourceChain, apiId, task);
+            })
             ;
 
         allMappings.push(pEndpoint);
@@ -96,7 +100,7 @@ function getResource(endpoint, apiId, existingResources) {
             return (endpoint.path.search(new RegExp("^" + item.path, "i")) >= 0);
         });
 
-console.log("Endpoint: ", endpoint, "Parents: ", foundParents);
+        console.log("Endpoint: ", endpoint, "Parents: ", foundParents);
 
         let lowestParent = null;
         foundParents.forEach((parentItem) => {
@@ -106,7 +110,7 @@ console.log("Endpoint: ", endpoint, "Parents: ", foundParents);
 
         let createPath = endpoint.path.replace(new RegExp("^" + lowestParent.path, "i"), "");
         let createParts = createPath.length > 0 ? createPath.split("/") : [];
-console.log("Path: ", createPath, " to parts: ", createParts);
+        console.log("Path: ", createPath, " to parts: ", createParts);
 
         // Create each missing part of the path as a new resource
         (function createPart(parentResource) {
@@ -121,10 +125,10 @@ console.log("Path: ", createPath, " to parts: ", createParts);
 
                 apiGateway.createResource(newResource, (err, data) => {
                     if (!!err) {
-console.log(err);
+                        console.log(err);
                         reject(err);
                     } else {
-console.log("New Resource: ", data);
+                        console.log("New Resource: ", data);
                         createPart(data);
                     }
                 });
@@ -140,247 +144,124 @@ function addMethod(endpoint, resource, apiId) {
 
     return removeMethod(endpoint, resource, apiId)
         .then(() => {
-            return new Promise((resolve, reject) => {
-                let newMethod = new (function() {
-                    this.httpMethod = endpoint.method.toUpperCase();
-                    this.resourceId = resource.id;
-                    this.restApiId = apiId;
-                    this.authorizationType = "NONE";
-
-                    if (!!endpoint.headers || (!!endpoint.parameters && (endpoint.method.toUpperCase() == "GET")))
-                        this.requestParameters = new (function() {
-                            if (!!endpoint.parameters)
-                                endpoint.parameters.forEach((parameter) => {
-                                    // Add the parameter with caching disabled
-                                    this[`method.request.querystring.${parameter.name}`] = false;
-                                });
-
-                            if (!!endpoint.headers)
-                                endpoint.headers.forEach((header) => {
-                                    // Add the parameter with caching disabled
-                                    this[`method.request.header.${header.name}`] = false;
-                                });
-                        })();
-                })();
-                apiGateway.putMethod(newMethod, (err, data) => {
-                    if (!!err) {
-console.log(err);
-                        reject(err);
-                    } else {
-console.log("Created Method: ", data);
-                        resolve({ resource: resource, method: data });
-                    }
-                });
-            });
+            return gatewayIntegration.Method_AddToResource(endpoint.method, resource, apiId, endpoint.headers, endpoint.parameters);
+        })
+        .then((methodCreation) => {
+            return { resource: resource, method: methodCreation };
         });
 }
 
-function deleteMethodFromResource(httpMethod, resourceId, apiId) {
-    return new Promise((resolve, reject) => {
-        // If the method exists, delete it before re-adding
-        if (!!resource.resourceMethods && resource.resourceMethods[httpMethod.toUpperCase()]) {
-            // If debugging, find the method first, and display details
-            /*
-            let findMethod = new (function() {
-                this.httpMethod = endpoint.method.toUpperCase();
-                this.resourceId = resource.id;
-                this.restApiId = apiId;
-            })();
-            apiGateway.getMethod(findMethod, (err, data) => {
-                if (!!err)
-                    reject(err);
-                else {
-            console.log("Found Method: ", data);
-            if (!!data.methodResponses)
-            for (let code in data.methodResponses)
-            console.log("Method Response: ", code, data.methodResponses[code]);
-
-            if (!!data.methodIntegration && !!data.methodIntegration.integrationResponses)
-            for (let code in data.methodIntegration.integrationResponses)
-            console.log("Integration Response: ", code, data.methodIntegration.integrationResponses[code]);
-
-                    resolve({ resource: resource, method: data });
-                }
-            });
-            */
-            let removeMethod = new (function() {
-                this.restApiId = apiId;
-                this.resourceId = resourceId;
-                this.httpMethod = httpMethod.toUpperCase();
-            })();
-console.log("Deleting Method: ", removeMethod);
-            apiGateway.deleteMethod(removeMethod, (err, data) => {
-                if (!!err) {
-console.log("Method Delete Error: ", err);
-                    reject(err);
-                } else {
-console.log("Deleted: ", data);
-                    resolve(data);
-                }
-            });
-        } else
-            resolve();
-    });
-}
-
 function removeMethod(endpoint, resource, apiId) {
-    return deleteMethod(endpoint.method, resource.id, apiId);
+    return gatewayIntegration.Method_DeleteFromResource(endpoint.method, resource, apiId)
         .then(() => {
-            return deleteMethod("OPTIONS", resource.id, apiId);
+            return gatewayIntegration.Method_DeleteFromResource("OPTIONS", resource, apiId);
         });
 }
 
 function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, configuration) {
-    return new Promise((resolve, reject) => {
-        let newIntegration = new (function() {
-            this.httpMethod = method.httpMethod;
-            this.resourceId = resource.id;
-            this.restApiId = apiId;
-            this.type = "AWS";
-            this.integrationHttpMethod = "POST";
-
-            if (!!endpoint.parameters && (endpoint.method.toUpperCase() == "GET")) {
-                this.requestTemplates = new (function() {
-                    // Create a JSON string with each parameter
-                    let mappingTemplateItems = [];
-                    endpoint.parameters.forEach((parameter) => {
-                        mappingTemplateItems.push(inputMapping(parameter));
-                    });
-
-                    endpoint.headers.forEach((header) => {
-                        mappingTemplateItems.push(inputMapping(header));
-                    });
-
-                    this["application/json"] = `{${mappingTemplateItems.join(",")}}`
-                })();
-            }
-        })();
-
-        // Find the function ARN
-        let functionArn = null;
-        for (let idx = 0; idx < lambdaFunctions.Functions.length; idx++) {
-            if (lambdaFunctions.Functions[idx].FunctionName.toLowerCase() == (`${configuration.applicationName}_${endpoint.functionName}`).toLowerCase()) {
-                functionArn = lambdaFunctions.Functions[idx].FunctionArn;
-                newIntegration.uri = `arn:aws:apigateway:${configuration.awsRegion}:lambda:path/2015-03-31/functions/${functionArn}/invocations`;
-                break;
-            }
-        }
-        if (!newIntegration.uri)
-            reject(`No lambda function named ${configuration.applicationName}_${endpoint.functionName} found`);
-        else {
-
-console.log("Add integration: ", newIntegration);
-            apiGateway.putIntegration(newIntegration, (err, data) => {
-                if (!!err) {
-console.log(err);
-                    reject(err);
-                } else {
-console.log("Integration Added: ", data);
-                    resolve({ integration:data, method:method, resource: resource, functionArn: functionArn });
-                }
-            });
-        }
-    })
-    .then((integration) => {
-        let sourceArn = `arn:aws:execute-api:${configuration.awsRegion}:${configuration.awsAccountId}:${apiId}/*/${method.httpMethod}${endpoint.path}`;
-        return lambdaTask.AddEventPermission(integration.functionArn, sourceArn, "apigateway.amazonaws.com")
-            .then(() => {
-                return integration;
-            });
-    });
-}
-
-function inputMapping(parameter) {
-    let paramString = `\"${parameter.name}\":`;
-    if (!parameter.notString)
-        paramString += "\"";
-    paramString += `$input.params(\'${parameter.name}\')`;
-    if (!parameter.notString)
-        paramString += "\"";
-
-    return paramString;
-}
-
-function integrationResponse(endpoint, integration, resource, method, apiId, configuration) {
-    return new Promise((resolve, reject) => {
-        let newResponse = new (function() {
-            this.restApiId = apiId;
-            this.resourceId = resource.id;
-            this.httpMethod = method.httpMethod;
-            this.statusCode = "200";
-            this.responseTemplates = new (function() {
-                this["application/json"] = null;
-            })();
-        })();
-
-console.log("Add Integration Response: ", newResponse);
-        apiGateway.putIntegrationResponse(newResponse, (err, data) => {
-            if (!!err) {
-console.log(err);
-                reject(err);
-            } else {
-console.log("Integration Response Created: ", data);
-                resolve({ integrationResponse: data, integration: integration, resource: resource, method: method });
-            }
+    return gatewayIntegration.Method_LambdaIntegrationRequest(
+        method,
+        endpoint.headers,
+        endpoint.parameters,
+        resource,
+        apiId,
+        configuration.applicationName,
+        endpoint.functionName,
+        configuration.awsRegion,
+        configuration.awsAccountId,
+        lambdaFunctions)
+        .then((integration) => {
+            return { integration:integration, method:method, resource: resource };
         });
-    });
 }
 
-function methodResponse(endpoint, integrationResponse, integration, resource, method, apiId, configuration) {
-    return deleteMethodResponses(endpoint, resource, method, apiId)
-        .then(() => {
-            return new Promise((resolve, reject) => {
-                let newResponse = new (function() {
-                    this.restApiId = apiId;
-                    this.resourceId = resource.id;
-                    this.httpMethod = method.httpMethod;
-                    this.statusCode = "200";
-                    this.responseModels = new (function() {
-                        this["application/json"] = "Empty";
-                    })();
-                })();
-        console.log("Add Method Response: ", newResponse);
-                apiGateway.putMethodResponse(newResponse, (err, data) => {
-                    if (!!err) {
-        console.log(err);
-                        reject(err);
-                    } else {
-        console.log("Method Response Created: ", data);
-                        resolve();
-                    }
-                });
-            });
-        })
-        ;
+function integrationResponse(endpoint, resourceChain, apiId, task) {
+    let headers = null;
+
+    // Add Access-Control-Allow-Origin header to the resource method
+    if (!!task.cors && !!task.cors.origin)
+        headers = [
+            // Access-Control-Allow-Origin = the configured CORS origin
+            { "name":"Access-Control-Allow-Origin", "value":task.cors.origin }
+        ];
+
+    return gatewayIntegration.Method_AddIntegrationResponse(resourceChain.method, resourceChain.resource, apiId, headers)
+        .then((integrationResponse) => {
+            resourceChain.integrationResponse = integrationResponse;
+            return resourceChain;
+        });
 }
 
-function deleteMethodResponses(endpoint, resource, method, apiId) {
-    // Find a 200
-    let responseRemovals = [];
+function methodResponse(endpoint, resourceChain, apiId, task) {
+    let headers = null;
 
-    if (!!method.methodResponses && !!method.methodResponses["200"]) {
-        responseRemovals.push(new Promise((resolve, reject) => {
-            let removeResponse = new (function() {
-                this.restApiId = apiId;
-                this.resourceId = resource.id;
-                this.httpMethod = method.httpMethod;
-                this.statusCode = "200";
-            })();
-console.log("Delete Method Response: ", removeResponse);
+    // Add Access-Control-Allow-Origin header to the resource method
+    if (!!task.cors && !!task.cors.origin)
+        headers = [
+            // Access-Control-Allow-Origin = the configured CORS origin
+            { "name":"Access-Control-Allow-Origin" }
+        ]
 
-            apiGateway.deleteMethodResponse(removeResponse, (err, data) => {
-                if (!!err) {
-console.log(err);
-                    reject(err);
-                } else {
-console.log("Method Response Deleted: ", data);
-                    resolve();
-                }
-            });
-        }));
+    return gatewayIntegration.Method_AddMethodResponse(resourceChain.resource, resourceChain.method, apiId, headers)
+        .then((methodResponse) => {
+            resourceChain.methodResponse = methodResponse;
+            return resourceChain;
+        });
+}
+
+function addCorsMethod(endpoint, resourceChain, apiId, task) {
+    if (!task.cors)
+        return null;
+    else if (!task.cors.origin)
+        throw `CORS configuration must define "origin". Use "*" for all origins`;
+    else {
+        // Create OPTIONS method
+        return gatewayIntegration.Method_AddToResource("OPTIONS", resourceChain.resource, apiId)
+            .then((optionsMethod) => {
+                // Add integration of type "Mock" with application/json mapping of: {"statusCode": 200}
+                return gatewayIntegration.Method_MockIntegrationRequest(optionsMethod, 200, resourceChain.resource, apiId)
+                    .then((integrationRequest) => {
+                        return optionsMethod;
+                    });
+            })
+            .then((optionsMethod) => {
+                // Add method response of 200 with empty response model
+
+                    // Add headers to integration response
+                    let headers = [
+                        // Access-Control-Allow-Headers
+                        { "name":"Access-Control-Allow-Headers" },
+                        // Access-Control-Allow-Methods
+                        { "name":"Access-Control-Allow-Methods" },
+                        // Access-Control-Allow-Origin
+                        { "name":"Access-Control-Allow-Origin" }
+                    ];
+
+                return gatewayIntegration.Method_AddMethodResponse(resourceChain.resource, optionsMethod, apiId, headers)
+                    .then((methodResponse) => {
+                        return optionsMethod;
+                    });
+            })
+            .then((optionsMethod) => {
+                // Add integration response of 200 with an empty application/json mapping template
+
+                // Add headers to integration response
+                let headers = [
+                    // Access-Control-Allow-Headers = 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+                    { "name":"Access-Control-Allow-Headers", "value":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token" },
+                    // Access-Control-Allow-Methods = 'OPTIONS,' and whatever the resource method is
+                    { "name":"Access-Control-Allow-Methods", "value":([resourceChain.method.httpMethod, "OPTIONS"]).join(",") },
+                    // Access-Control-Allow-Origin = the configured CORS origin
+                    { "name":"Access-Control-Allow-Origin", "value":task.cors.origin }
+                ];
+
+                return gatewayIntegration.Method_AddIntegrationResponse(optionsMethod, resourceChain.resource, apiId, headers)
+                    .then((integrationResponse) => {
+                        return optionsMethod;
+                    });
+            })
+            ;
     }
-
-    return Promise.all(responseRemovals);
 }
 
 module.exports.Task = apiGatewayTask;
