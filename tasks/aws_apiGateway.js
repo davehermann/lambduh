@@ -104,7 +104,7 @@ function addIntegrationRequest(integrationParameters) {
 }
 
 function inputMapping(parameter) {
-    let paramString = `\"${parameter.name}\":`;
+    let paramString = `\"${!!parameter.parameterName ? parameter.parameterName : parameter.name}\":`;
     if (!parameter.notString)
         paramString += "\"";
     paramString += `$input.params(\'${parameter.name}\')`;
@@ -126,13 +126,15 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
             this.requestTemplates = new (function() {
                 // Create a JSON string with each parameter
                 let mappingTemplateItems = [];
-                parameters.forEach((parameter) => {
-                    mappingTemplateItems.push(inputMapping(parameter));
-                });
+                if (!!parameters)
+                    parameters.forEach((parameter) => {
+                        mappingTemplateItems.push(inputMapping(parameter));
+                    });
 
-                headers.forEach((header) => {
-                    mappingTemplateItems.push(inputMapping(header));
-                });
+                if (!!headers)
+                    headers.forEach((header) => {
+                        mappingTemplateItems.push(inputMapping(header));
+                    });
 
                 this["application/json"] = `{${mappingTemplateItems.join(",")}}`
             })();
