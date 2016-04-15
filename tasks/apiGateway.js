@@ -175,10 +175,10 @@ console.log("Created Method: ", data);
         });
 }
 
-function removeMethod(endpoint, resource, apiId) {
+function deleteMethodFromResource(httpMethod, resourceId, apiId) {
     return new Promise((resolve, reject) => {
         // If the method exists, delete it before re-adding
-        if (!!resource.resourceMethods && resource.resourceMethods[endpoint.method.toUpperCase()]) {
+        if (!!resource.resourceMethods && resource.resourceMethods[httpMethod.toUpperCase()]) {
             // If debugging, find the method first, and display details
             /*
             let findMethod = new (function() {
@@ -205,13 +205,13 @@ function removeMethod(endpoint, resource, apiId) {
             */
             let removeMethod = new (function() {
                 this.restApiId = apiId;
-                this.resourceId = resource.id;
-                this.httpMethod = endpoint.method.toUpperCase();
+                this.resourceId = resourceId;
+                this.httpMethod = httpMethod.toUpperCase();
             })();
 console.log("Deleting Method: ", removeMethod);
             apiGateway.deleteMethod(removeMethod, (err, data) => {
                 if (!!err) {
-console.log(err);
+console.log("Method Delete Error: ", err);
                     reject(err);
                 } else {
 console.log("Deleted: ", data);
@@ -221,6 +221,13 @@ console.log("Deleted: ", data);
         } else
             resolve();
     });
+}
+
+function removeMethod(endpoint, resource, apiId) {
+    return deleteMethod(endpoint.method, resource.id, apiId);
+        .then(() => {
+            return deleteMethod("OPTIONS", resource.id, apiId);
+        });
 }
 
 function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, configuration) {
