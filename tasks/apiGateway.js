@@ -19,7 +19,13 @@ function apiGatewayTask(task, configuration) {
             return existingApiResources(apiId);
         })
         .then((api) => {
-            return createMappings(task, api.apiId, api.existingResources, existingFunctions, configuration);
+            return createMappings(task, api.apiId, api.existingResources, existingFunctions, configuration)
+                .then(() => {
+                    return api;
+                });
+        })
+        .then((api) => {
+            return pushToStage(task, api);
         })
         ;
 }
@@ -30,7 +36,7 @@ function allExistingApis() {
             if (!!err)
                 reject(err);
             else {
-console.log("Found APIs: ", data);
+                console.log("Found APIs: ", data);
                 resolve(data);
             }
         })
@@ -58,7 +64,7 @@ function existingApiResources(apiId) {
             if (!!err)
                 reject(err);
             else {
-console.log("API Resources: ", JSON.stringify(data, null, 4));
+                console.log("API Resources: ", JSON.stringify(data, null, 4));
                 resolve({ apiId: apiId, existingResources: data});
             }
         })
@@ -69,7 +75,6 @@ function createMappings(task, apiId, existingResources, existingFunctions, confi
     let allMappings = [];
 
     task.endpoints.forEach((endpoint) => {
-// { "path": "/site/defs", "method":"GET", "functionName":"definitionByHostname" }
         let pEndpoint = getResource(endpoint, apiId, existingResources)
             .then((resource) => {
                 return addMethod(endpoint, resource, apiId);
@@ -262,6 +267,13 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
             })
             ;
     }
+}
+
+function pushToStage(task, api) {
+    if (!task.stage)
+        return null;
+    else
+        return gatewayIntegration.Deployment_Create(task.stage, api.apiId);
 }
 
 module.exports.Task = apiGatewayTask;

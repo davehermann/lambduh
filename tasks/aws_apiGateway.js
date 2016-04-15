@@ -274,9 +274,32 @@ function addMethodResponse(resource, method, apiId, headers) {
         });
 }
 
+function createDeployment(stageName, apiId) {
+    let newDeployment = new (function() {
+        this.restApiId = apiId;
+        this.stageName = stageName;
+    })();
+
+    console.log("Create Deployment: ", newDeployment);
+
+    return new Promise((resolve, reject) => {
+        apiGateway.createDeployment(newDeployment, (err, data) => {
+            if (!!err) {
+                console.log("Deployment Creation Error: ", err);
+                reject(err);
+            } else {
+                console.log("API Gateway Deployed: ", data);
+                resolve(data);
+            }
+        });
+    });
+}
+
 module.exports.Method_DeleteFromResource = deleteMethodFromResource;
 module.exports.Method_AddToResource = addMethodToResource;
 module.exports.Method_LambdaIntegrationRequest = addLambdaIntegrationRequest;
 module.exports.Method_MockIntegrationRequest = addMockIntegrationRequest;
 module.exports.Method_AddIntegrationResponse = addIntegrationResponse;
 module.exports.Method_AddMethodResponse = addMethodResponse;
+
+module.exports.Deployment_Create = createDeployment;
