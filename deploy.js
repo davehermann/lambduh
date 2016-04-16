@@ -24,11 +24,10 @@ module.exports.lambda = function(evtData, context, callback) {
             awsAccountId = arnParts[4];
         })
         .then(() => {
-            cleanRoot();
+            return cleanRoot();
         })
         .then(() => {
-            // Assume only one item triggering at a time
-            return extractFiles(evtData.Records[0].s3)
+            return loadSource(evtData);
         })
         .then(() => {
             return loadConfiguration();
@@ -74,6 +73,12 @@ function cleanRoot() {
             });
         }
     })
+}
+
+function loadSource(evtData) {
+    if (!!evtData.Records && !!evtData.Records[0].s3)
+        // Assume only one item triggering at a time
+        return extractFiles(evtData.Records[0].s3);
 }
 
 function extractFiles(s3Description) {
