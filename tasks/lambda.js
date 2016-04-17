@@ -5,10 +5,17 @@ let aws = require("aws-sdk"),
     admZip = require("adm-zip"),
     lambda = new aws.Lambda({ apiVersion: "2015-03-31" }),
     path = require("path"),
-    uuid = require("uuid");
+    uuid = require("uuid"),
+    spawn = require("child_process").spawn;
 
 function lambdaTask(task, extractionLocation, localRoot, configuration) {
     return allExistingFunctions()
+        .then((existingFunctions) => {
+            return npmInstall(extractionLocation, localRoot, configuration)
+                .then(() => {
+                    return existingFunctions;
+                });
+        })
         .then((existingFunctions) => {
             let definitionList = [];
 
@@ -34,9 +41,51 @@ function allExistingFunctions() {
         });
     })
     .then((fData) => {
-console.log(fData);
+        console.log(fData);
 
         return fData;
+    });
+}
+
+function npmInstall(extractionLocation, localRoot, configuration) {
+    return new Promise((resolve, reject) => {
+        fs.mkdirsSync(`${localRoot}/npmConfig/cache`);
+
+        let npm = spawn("npm", ["install", "--production", "--prefix", extractionLocation, "--userconfig", `${localRoot}/npmConfig`, "--cache", `${localRoot}/npmConfig/cache`], { cwd: extractionLocation }),
+            runDetails = "",
+            errDetails = "";
+
+        npm.stdout.on("data", (data) => {
+            runDetails += data;
+        });
+        npm.stderr.on("data", (data) => {
+            errDetails += data;
+        });
+        npm.on("error", (err) => {
+            reject(err);
+        });
+        npm.on("close", (exitCode) => {
+            let newFiles = fs.readdirSync(extractionLocation);
+
+            if (newFiles.indexOf("npm-debug.log") >= 0) {
+                let debugLog = null;
+
+                errDetails += `\nCurrent Directory: \n${newFiles}`;
+
+                debugLog = fs.readFileSync(extractionLocation + "/npm-debug.log", { encoding: "utf8" });
+
+                if (!!debugLog) {
+                    errDetails += `\n\n----------------npm-debug.log----------------\n\n`;
+                    errDetails += debugLog;
+                }
+
+                reject(errDetails);
+            } else {
+                console.log("Warnings: ", errDetails);
+                console.log("Install: ", runDetails);
+                resolve();
+            }
+        });
     });
 }
 

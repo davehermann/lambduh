@@ -2,8 +2,7 @@
 
 let aws = require("aws-sdk"),
     tar = require("tar"),
-    fs = require("fs"),
-    rimraf = require("rimraf"),
+    fs = require("fs-extra"),
     zlib = require("zlib"),
     s3Task = require("./tasks/s3.js"),
     lambdaTask = require("./tasks/lambda.js"),
@@ -33,6 +32,7 @@ module.exports.lambda = function(evtData, context, callback) {
             return loadConfiguration();
         })
         .then((configuration) => {
+            configuration.cwd = __dirname;
             configuration.awsRegion = awsRegion;
             configuration.awsAccountId = awsAccountId;
 
@@ -64,7 +64,7 @@ function cleanRoot() {
         else {
             // Delete the existing directory
             return new Promise((resolve, reject) => {
-                rimraf(localRoot, (err) => {
+                fs.remove(localRoot, (err) => {
                     if (!!err)
                         reject(err);
                     else
