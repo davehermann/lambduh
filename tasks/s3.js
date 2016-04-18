@@ -103,6 +103,8 @@ function cleanUnusedFiles(sourceKeys, task) {
         if (!!task.dest.key)
             keyList.Prefix = task.dest.key;
 
+        console.log(`Cleaning removed items from ${JSON.stringify(keyList)}`);
+
         let s3 = new aws.S3({ apiVersion: '2006-03-01' });
 
         let foundKeys = [];

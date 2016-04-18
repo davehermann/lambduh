@@ -11,7 +11,7 @@ let aws = require("aws-sdk"),
 function lambdaTask(task, extractionLocation, localRoot, configuration) {
     return allExistingFunctions()
         .then((existingFunctions) => {
-            return npmInstall(extractionLocation, localRoot, configuration)
+            return npmInstall(extractionLocation, localRoot, task, configuration)
                 .then(() => {
                     return existingFunctions;
                 });
@@ -47,46 +47,67 @@ function allExistingFunctions() {
     });
 }
 
-function npmInstall(extractionLocation, localRoot, configuration) {
-    return new Promise((resolve, reject) => {
-        fs.mkdirsSync(`${localRoot}/npmConfig/cache`);
+function npmInstall(extractionLocation, localRoot, task, configuration) {
+    return setPackageJson(extractionLocation, task)
+        .then(() => {
+            return new Promise((resolve, reject) => {
+                fs.mkdirsSync(`${localRoot}/npmConfig/cache`);
 
-        let npm = spawn("npm", ["install", "--production", "--prefix", extractionLocation, "--userconfig", `${localRoot}/npmConfig`, "--cache", `${localRoot}/npmConfig/cache`], { cwd: extractionLocation }),
-            runDetails = "",
-            errDetails = "";
+                let npm = spawn("npm", ["install", "--production", "--prefix", extractionLocation, "--userconfig", `${localRoot}/npmConfig`, "--cache", `${localRoot}/npmConfig/cache`], { cwd: extractionLocation }),
+                    runDetails = "",
+                    errDetails = "";
 
-        npm.stdout.on("data", (data) => {
-            runDetails += data;
+                npm.stdout.on("data", (data) => {
+                    runDetails += data;
+                });
+                npm.stderr.on("data", (data) => {
+                    errDetails += data;
+                });
+                npm.on("error", (err) => {
+                    reject(err);
+                });
+                npm.on("close", (exitCode) => {
+                    let newFiles = fs.readdirSync(extractionLocation);
+
+                    if (newFiles.indexOf("npm-debug.log") >= 0) {
+                        let debugLog = null;
+
+                        errDetails += `\nCurrent Directory: \n${newFiles}`;
+
+                        debugLog = fs.readFileSync(extractionLocation + "/npm-debug.log", { encoding: "utf8" });
+
+                        if (!!debugLog) {
+                            errDetails += `\n\n----------------npm-debug.log----------------\n\n`;
+                            errDetails += debugLog;
+                        }
+
+                        reject(errDetails);
+                    } else {
+                        console.log("Warnings: ", errDetails);
+                        console.log("Install: ", runDetails);
+                        resolve();
+                    }
+                });
+            });
         });
-        npm.stderr.on("data", (data) => {
-            errDetails += data;
-        });
-        npm.on("error", (err) => {
-            reject(err);
-        });
-        npm.on("close", (exitCode) => {
-            let newFiles = fs.readdirSync(extractionLocation);
+}
 
-            if (newFiles.indexOf("npm-debug.log") >= 0) {
-                let debugLog = null;
-
-                errDetails += `\nCurrent Directory: \n${newFiles}`;
-
-                debugLog = fs.readFileSync(extractionLocation + "/npm-debug.log", { encoding: "utf8" });
-
-                if (!!debugLog) {
-                    errDetails += `\n\n----------------npm-debug.log----------------\n\n`;
-                    errDetails += debugLog;
+function setPackageJson(extractionLocation, task) {
+    if (!task.alternatePackageJson)
+        return null;
+    else
+        return new Promise((resolve, reject) => {
+            // Copy the alternate package.json to package.json
+            fs.copy(`${extractionLocation}/${task.alternatePackageJson}`, `${extractionLocation}/package.json`, { clobber: true }, (err) => {
+                if (!!err) {
+                    console.log(err);
+                    reject(err);
+                } else {
+                    console.log(`Replaced /package.json with /${task.alternatePackageJson}`)
+                    resolve();
                 }
-
-                reject(errDetails);
-            } else {
-                console.log("Warnings: ", errDetails);
-                console.log("Install: ", runDetails);
-                resolve();
-            }
+            });
         });
-    });
 }
 
 function copyNodeModules(extractionLocation, codeLocation) {
