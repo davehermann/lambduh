@@ -157,7 +157,7 @@ function addFilesToZip(directoryToScan, functionName) {
 
 function copyRequiredFile(codeLocation, extractionLocation, filePath) {
     return new Promise((resolve, reject) => {
-console.log("Copying ", `${extractionLocation}${filePath}`, " to ", `${codeLocation}${filePath}`);
+    console.log("Copying ", `${extractionLocation}${filePath}`, " to ", `${codeLocation}${filePath}`);
 
         // // Create the directory
         // fs.mkdirsSync(`${codeLocation}${path.dirname(filePath)}`);
@@ -207,7 +207,7 @@ console.log("Copying ", `${extractionLocation}${filePath}`, " to ", `${codeLocat
 }
 
 function deployFunction(functionDefinition, existingFunctions, configuration, extractionLocation, localRoot) {
-console.log(functionDefinition);
+    console.log(functionDefinition);
     let functionName = functionDefinition.name;
     if (!!configuration.applicationName)
         functionName = configuration.applicationName + "_" + functionName;
@@ -220,7 +220,7 @@ console.log(functionDefinition);
         .then(() => {
             return copyRequiredFile(codeLocation, extractionLocation, functionDefinition.source);
             // return new Promise((resolve, reject) => {
-// console.log("Copying ", extractionLocation + functionDefinition.source, " to ", codeLocation + functionDefinition.source);
+            // console.log("Copying ", extractionLocation + functionDefinition.source, " to ", codeLocation + functionDefinition.source);
 
                 // // Create the directory
                 // fs.mkdirsSync(`${codeLocation}${path.dirname(functionDefinition.source)}`);
@@ -265,36 +265,36 @@ console.log(functionDefinition);
 
                 if (!functionExists) {
                     functionConfiguration.Runtime = "nodejs4.3";
-console.log("Creating Lambda Function: ", functionConfiguration);
+                    console.log("Creating Lambda Function: ", functionConfiguration);
                     functionConfiguration.Code = { ZipFile: zip.toBuffer() };
 
                     lambda.createFunction(functionConfiguration, (err, data) => {
                         if (!!err)
                             reject(err);
                         else {
-console.log("Function Created: ", data);
+                            console.log("Function Created: ", data);
                             resolve();
                         }
                     });
                 } else {
-console.log("Update Lambda Function: ", functionConfiguration);
+                    console.log("Update Lambda Function: ", functionConfiguration);
                     lambda.updateFunctionConfiguration(functionConfiguration, (err, data) => {
                         if (!!err) {
-console.log("Configuration Update Error: ", err);
+                            console.log("Configuration Update Error: ", err);
                             reject(err);
                         } else {
-console.log("Function Configuration Updated: ", data);
+                            console.log("Function Configuration Updated: ", data);
 
                             let codeUpdate = new (function() {
                                 this.FunctionName = functionName;
                                 this.ZipFile = zip.toBuffer();
                             })();
-console.log("Updating code");
+                            console.log("Updating code");
                             lambda.updateFunctionCode(codeUpdate, (err, data) => {
                                 if (!!err)
                                     reject(err);
                                 else {
-console.log("Function Code Updated: ", data);
+                                    console.log("Function Code Updated: ", data);
                                     resolve();
                                 }
                             });
@@ -311,7 +311,7 @@ function functionConfiguration(functionName) {
             if (!!err)
                 reject(err);
             else {
-console.log("Configuration: ", data);
+                console.log("Configuration: ", data);
                 resolve(data);
             }
         });
@@ -327,16 +327,73 @@ function addEventInvocationPermission(functionArn, sourceArn, sourcePrincipal) {
             this.Principal = sourcePrincipal;
             this.SourceArn = sourceArn;
         })();
-console.log("Add Lambda Permission: ", newPermission);
+        console.log("Add Lambda Permission: ", newPermission);
         lambda.addPermission(newPermission, (err, data) => {
             if (!!err) {
-console.log(err);
+                console.log(err);
                 reject(err);
             } else {
-console.log("Lambda Permission Added: ", data);
+                console.log("Lambda Permission Added: ", data);
                 resolve(data);
             }
         });
+    });
+}
+
+function createVersion(functionArn) {
+    return new Promise((resolve, reject) => {
+        lambda.publishVersion({ FunctionName: functionArn }, (err, data) => {
+            if (!!err) {
+                console.log("Function Versioning Error: ", err);
+                reject(err);
+            } else {
+                console.log("Function Version Created: ", data);
+                resolve(data);
+            }
+        });
+    });
+}
+
+function getAliases(functionArn) {
+    return new Promise((resolve, reject) => {
+        lambda.listAliases({ FunctionName: functionArn }, (err, data) => {
+            if (!!err) {
+                console.log("Function Aliases Error: ", err);
+                reject(err);
+            } else {
+                console.log(`Found Aliases for ${functionArn}`, data);
+                resolve(data);
+            }
+        });
+    });
+}
+
+function createOrUpdateAlias(functionVersionDetail, aliasName, isUpdate) {
+    return new Promise((resolve, reject) => {
+        let alias = new (function() {
+            this.FunctionName = functionVersionDetail.FunctionName;
+            this.FunctionVersion = functionVersionDetail.Version;
+            this.Name = aliasName;
+        })();
+
+        let fUpd = function(err, data) {
+            if (!!err) {
+                console.log("Lambda Alias Error: ", err);
+                reject(err);
+            } else {
+                console.log(`Alias ${isUpdate ? "Updated" : "Created"}: `, data);
+                resolve(data);
+            }
+        }
+
+        if (isUpdate)
+            lambda.updateAlias(alias, (err, data) => {
+                fUpd(err, data);
+            });
+        else
+            lambda.createAlias(alias, (err, data) => {
+                fUpd(err, data);
+            });
     });
 }
 
@@ -344,3 +401,6 @@ module.exports.Task = lambdaTask;
 module.exports.AllFunctions = allExistingFunctions;
 module.exports.FunctionConfiguration = functionConfiguration;
 module.exports.AddEventPermission = addEventInvocationPermission;
+module.exports.CreateFunctionVersion = createVersion;
+module.exports.GetAliases = getAliases;
+module.exports.ModifyAlias = createOrUpdateAlias;

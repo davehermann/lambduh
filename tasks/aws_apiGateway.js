@@ -114,53 +114,94 @@ function inputMapping(parameter) {
     return paramString;
 }
 
-function addLambdaIntegrationRequest(method, headers, parameters, resource, apiId, applicationName, functionName, awsRegion, awsAccountId, knownLambdaFunctions) {
-    let newIntegration = new (function() {
-        this.httpMethod = method.httpMethod;
-        this.resourceId = resource.id;
-        this.restApiId = apiId;
-        this.type = "AWS";
-        this.integrationHttpMethod = "POST";
+function addLambdaIntegrationRequest(method, headers, parameters, resource, apiId, applicationName, functionName, awsRegion, awsAccountId, knownLambdaFunctions, task) {
+    return versionAndAliasLambdaFunction(applicationName, functionName, awsRegion, knownLambdaFunctions, task)
+        .then((functionUris) => {
+            let newIntegration = new (function() {
+                this.httpMethod = method.httpMethod;
+                this.resourceId = resource.id;
+                this.restApiId = apiId;
+                this.type = "AWS";
+                this.integrationHttpMethod = "POST";
 
-        if (!!headers || (!!parameters && (method.httpMethod.toUpperCase() == "GET")))
-            this.requestTemplates = new (function() {
-                // Create a JSON string with each parameter
-                let mappingTemplateItems = [];
-                if (!!parameters)
-                    parameters.forEach((parameter) => {
-                        mappingTemplateItems.push(inputMapping(parameter));
-                    });
+                if (!!headers || (!!parameters && (method.httpMethod.toUpperCase() == "GET")))
+                    this.requestTemplates = new (function() {
+                        // Create a JSON string with each parameter
+                        let mappingTemplateItems = [];
+                        if (!!parameters)
+                            parameters.forEach((parameter) => {
+                                mappingTemplateItems.push(inputMapping(parameter));
+                            });
 
-                if (!!headers)
-                    headers.forEach((header) => {
-                        mappingTemplateItems.push(inputMapping(header));
-                    });
+                        if (!!headers)
+                            headers.forEach((header) => {
+                                mappingTemplateItems.push(inputMapping(header));
+                            });
 
-                this["application/json"] = `{${mappingTemplateItems.join(",")}}`
+                        this["application/json"] = `{${mappingTemplateItems.join(",")}}`
+                    })();
+
+                this.uri = functionUris.versionUri;
             })();
-    })();
 
+            if (!newIntegration.uri)
+                throw `No lambda function named ${applicationName}_${functionName} found`;
+            else
+                return addIntegrationRequest(newIntegration)
+                    .then((integrationData) => {
+                        let sourceArn = `arn:aws:execute-api:${awsRegion}:${awsAccountId}:${apiId}/*/${method.httpMethod}${resource.path}`;
+                        return lambdaTask.AddEventPermission(functionUris.functionArn, sourceArn, "apigateway.amazonaws.com")
+                            .then(() => {
+                                return integrationData;
+                            });
+                    });
+        });
+}
+function generateVersionUri(awsRegion, functionArn) {
+    return `arn:aws:apigateway:${awsRegion}:lambda:path/2015-03-31/functions/${functionArn}/invocations`;
+}
+function versionAndAliasLambdaFunction(applicationName, functionName, awsRegion, knownLambdaFunctions, task) {
     // Find the function ARN
-    let functionArn = null;
+    let functionDetail = null;
     for (let idx = 0; idx < knownLambdaFunctions.Functions.length; idx++) {
         if (knownLambdaFunctions.Functions[idx].FunctionName.toLowerCase() == (`${applicationName}_${functionName}`).toLowerCase()) {
-            functionArn = knownLambdaFunctions.Functions[idx].FunctionArn;
-            newIntegration.uri = `arn:aws:apigateway:${awsRegion}:lambda:path/2015-03-31/functions/${functionArn}/invocations`;
+            functionDetail = knownLambdaFunctions.Functions[idx];
             break;
         }
     }
 
-    if (!newIntegration.uri)
-        throw `No lambda function named ${applicationName}_${functionName} found`;
+    // The functionArn and versionUri should point to the in-use function/alias
+    if (!task.stage)
+        return { functionArn: functionDetail.FunctionArn, versionUri: generateVersionUri(awsRegion, functionDetail.FunctionArn) };
     else
-        return addIntegrationRequest(newIntegration)
-            .then((integrationData) => {
-                let sourceArn = `arn:aws:execute-api:${awsRegion}:${awsAccountId}:${apiId}/*/${method.httpMethod}${resource.path}`;
-                return lambdaTask.AddEventPermission(functionArn, sourceArn, "apigateway.amazonaws.com")
-                    .then(() => {
-                        return integrationData;
+        // Version the function
+        return lambdaTask.CreateFunctionVersion(functionDetail.FunctionArn)
+            .then((versionCreated) => {
+                return { newVersion: versionCreated };
+            })
+            .then((versioning) => {
+                // Get all function aliases
+                return lambdaTask.GetAliases(functionDetail.FunctionArn)
+                    .then((aliasesFound) => {
+                        versioning.allAliases = aliasesFound.Aliases;
+                        return versioning;
                     });
-            });
+            })
+            .then((versioning) => {
+                let foundAlias = null;
+                versioning.allAliases.forEach((alias) => {
+                    if (alias.Name == task.stage)
+                        foundAlias = alias;
+                });
+
+                // If an alias to the function with the stage name exists, repoint to the new version
+                // Otherwise, create the alias
+                return lambdaTask.ModifyAlias(versioning.newVersion, task.stage, !!foundAlias)
+                    .then((updateData) => {
+                        return { functionArn: updateData.AliasArn, versionUri: generateVersionUri(awsRegion, updateData.AliasArn) };
+                    });
+            })
+            ;
 }
 
 function addMockIntegrationRequest(method, responseCode, resource, apiId) {

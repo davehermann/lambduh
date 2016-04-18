@@ -80,7 +80,7 @@ function createMappings(task, apiId, existingResources, existingFunctions, confi
                 return addMethod(endpoint, resource, apiId);
             })
             .then((method) => {
-                return lambdaIntegration(endpoint, method.resource, method.method, apiId, existingFunctions, configuration);
+                return lambdaIntegration(endpoint, method.resource, method.method, apiId, existingFunctions, task, configuration);
             })
             .then((resourceChain) => {
                 return methodResponse(endpoint, resourceChain, apiId, task);
@@ -163,7 +163,7 @@ function removeMethod(endpoint, resource, apiId) {
         });
 }
 
-function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, configuration) {
+function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, task, configuration) {
     return gatewayIntegration.Method_LambdaIntegrationRequest(
         method,
         endpoint.headers,
@@ -174,7 +174,8 @@ function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, c
         endpoint.functionName,
         configuration.awsRegion,
         configuration.awsAccountId,
-        lambdaFunctions)
+        lambdaFunctions,
+        task)
         .then((integration) => {
             return { integration:integration, method:method, resource: resource };
         });
