@@ -1,7 +1,9 @@
 "use strict";
 
-let fs = require("fs"),
-    aws = require("aws-sdk");
+let fs = require("fs-extra"),
+    aws = require("aws-sdk"),
+    path = require("path"),
+    mime = require("mime-types");
 
 function s3Task(task, extractionLocation) {
     return new Promise((resolve, reject) => {
@@ -71,6 +73,10 @@ function handleFile(rootPath, filePath, task, sourceKeys) {
                     this.Bucket = task.dest.bucket;
                     this.Key = relativePath;
                     this.Body = fileContents;
+
+                    let mimeType = mime.lookup(path.extname(relativePath));
+                    if (!!mimeType)
+                        this.ContentType = mimeType;
                 })();
                 s3.putObject(objectConfig, (err, putData) => {
                     if (!!err)

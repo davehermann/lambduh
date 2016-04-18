@@ -8,6 +8,7 @@
   "dependencies": {
     "adm-zip": "^0.4.7",
     "fs-extra": "^0.26.7",
+    "mime-types": "^2.1.10",
     "tar": "^2.2.1",
     "uuid": "^2.0.1"
   }
