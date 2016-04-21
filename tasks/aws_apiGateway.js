@@ -145,7 +145,7 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
             })();
 
             if (!newIntegration.uri)
-                throw `No lambda function named ${applicationName}_${functionName} found`;
+                throw `No lambda function named ld_${applicationName}_${functionName} found`;
             else
                 return addIntegrationRequest(newIntegration)
                     .then((integrationData) => {
@@ -164,7 +164,7 @@ function versionAndAliasLambdaFunction(applicationName, functionName, awsRegion,
     // Find the function ARN
     let functionDetail = null;
     for (let idx = 0; idx < knownLambdaFunctions.Functions.length; idx++) {
-        if (knownLambdaFunctions.Functions[idx].FunctionName.toLowerCase() == (`${applicationName}_${functionName}`).toLowerCase()) {
+        if (knownLambdaFunctions.Functions[idx].FunctionName.toLowerCase() == (`ld_${applicationName}_${functionName}`).toLowerCase()) {
             functionDetail = knownLambdaFunctions.Functions[idx];
             break;
         }

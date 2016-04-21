@@ -208,9 +208,7 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
 
 function deployFunction(functionDefinition, existingFunctions, configuration, extractionLocation, localRoot) {
     console.log(functionDefinition);
-    let functionName = functionDefinition.name;
-    if (!!configuration.applicationName)
-        functionName = configuration.applicationName + "_" + functionName;
+    let functionName = `ld_${!!configuration.applicationName ? configuration.applicationName + "_" : ""}${functionDefinition.name}`;
 
     let functionExists = existingFunctions.Functions.some((item) => { return item.FunctionName.toLowerCase() == functionName.toLowerCase() });
 
