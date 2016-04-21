@@ -3,7 +3,8 @@
 let fs = require("fs-extra"),
     aws = require("aws-sdk"),
     path = require("path"),
-    mime = require("mime-types");
+    mime = require("mime-types"),
+    uuid = require("uuid");
 
 function s3Task(task, extractionLocation) {
     return new Promise((resolve, reject) => {
@@ -60,7 +61,7 @@ function handleFile(rootPath, filePath, task, sourceKeys) {
 
     sourceKeys.push(relativePath);
 
-// console.log(`${filePath} is a file going to ${relativePath} in ${task.dest.bucket}`);
+    // console.log(`${filePath} is a file going to ${relativePath} in ${task.dest.bucket}`);
 
     return new Promise((resolve, reject) => {
         let s3 = new aws.S3({ apiVersion: '2006-03-01' });
@@ -70,13 +71,21 @@ function handleFile(rootPath, filePath, task, sourceKeys) {
                 reject(err);
             else {
                 let objectConfig = new (function() {
-                    this.Bucket = task.dest.bucket;
-                    this.Key = relativePath;
-                    this.Body = fileContents;
+                    let oc = this;
+
+                    oc.Bucket = task.dest.bucket;
+                    oc.Key = relativePath;
+                    oc.Body = fileContents;
 
                     let mimeType = mime.lookup(path.extname(relativePath));
                     if (!!mimeType)
-                        this.ContentType = mimeType;
+                        oc.ContentType = mimeType;
+
+                    oc.CacheControl = !!task.cacheControl ? task.cacheControl : "no-cache";
+                    oc.Metadata = new (function() {
+                        this["Cache-Control"] = oc.CacheControl;
+                        this["ETag"] = uuid.v4();
+                    })();
                 })();
                 s3.putObject(objectConfig, (err, putData) => {
                     if (!!err)
@@ -90,7 +99,7 @@ function handleFile(rootPath, filePath, task, sourceKeys) {
 }
 
 function handleDirectory(rootPath, directoryPath, task, sourceKeys) {
-// console.log(`${directoryPath} is a directory`);
+    // console.log(`${directoryPath} is a directory`);
 
     return readDirectory(directoryPath, rootPath, task, sourceKeys);
     // return null;
