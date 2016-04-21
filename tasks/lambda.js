@@ -83,7 +83,8 @@ function npmInstall(extractionLocation, localRoot, task, configuration) {
 
                         reject(errDetails);
                     } else {
-                        console.log("Warnings: ", errDetails);
+                        if (errDetails.length > 0)
+                            console.log("Warnings: ", errDetails);
                         console.log("Install: ", runDetails);
                         resolve();
                     }
@@ -395,6 +396,61 @@ function createOrUpdateAlias(functionVersionDetail, aliasName, isUpdate) {
     });
 }
 
+function getAllFunctionVersions(functionArn) {
+    return new Promise((resolve, reject) => {
+        lambda.listVersionsByFunction({ FunctionName: functionArn }, (err, data) => {
+            if (!!err) {
+                console.log("Function Version Listing Error: ", err);
+                reject(err);
+            } else {
+                console.log("All Versions of ", functionArn, ": ", data);
+                resolve(data);
+            }
+        });
+    });
+}
+
+function deleteVersion(versionArn, versionNumber) {
+    return new Promise((resolve, reject) => {
+        console.log("Function ", versionArn, " removing version: ", versionNumber);
+        lambda.deleteFunction({ FunctionName: versionArn, Qualifier: versionNumber }, (err, data) => {
+            if (!!err) {
+                console.log("Version removal error: ", err);
+                reject(err);
+            } else {
+                console.log(`Version ${versionNumber} removed: `, data);
+                resolve(data);
+            }
+        });
+    })
+}
+
+function removeUnusedVersions(functionArn) {
+    return getAllFunctionVersions(functionArn)
+        .then((allVersions) => {
+            return getAliases(functionArn)
+                .then((allAliases) => {
+                    return { versions: allVersions, aliases: allAliases };
+                });
+        })
+        .then((removalConfiguration) => {
+            let versionsWithAlias = ["$LATEST"];
+            if (!!removalConfiguration.aliases && !!removalConfiguration.aliases.Aliases)
+                removalConfiguration.aliases.Aliases.forEach((alias) => {
+                    versionsWithAlias.push(alias.FunctionVersion);
+                });
+
+            let versionDelete = [];
+            removalConfiguration.versions.Versions.forEach((version) => {
+                if (versionsWithAlias.indexOf(version.Version) < 0)
+                    versionDelete.push(deleteVersion(version.FunctionArn, version.Version))
+            });
+
+            return Promise.all(versionDelete);
+        })
+        ;
+}
+
 module.exports.Task = lambdaTask;
 module.exports.AllFunctions = allExistingFunctions;
 module.exports.FunctionConfiguration = functionConfiguration;
@@ -402,3 +458,4 @@ module.exports.AddEventPermission = addEventInvocationPermission;
 module.exports.CreateFunctionVersion = createVersion;
 module.exports.GetAliases = getAliases;
 module.exports.ModifyAlias = createOrUpdateAlias;
+module.exports.DeleteEmptyVersions = removeUnusedVersions;

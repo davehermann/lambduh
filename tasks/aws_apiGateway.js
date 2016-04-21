@@ -201,6 +201,12 @@ function versionAndAliasLambdaFunction(applicationName, functionName, awsRegion,
                         return { functionArn: updateData.AliasArn, versionUri: generateVersionUri(awsRegion, updateData.AliasArn) };
                     });
             })
+            .then((functionUris) => {
+                return lambdaTask.DeleteEmptyVersions(functionDetail.FunctionArn)
+                    .then(() => {
+                        return functionUris;
+                    });
+            })
             ;
 }
 
