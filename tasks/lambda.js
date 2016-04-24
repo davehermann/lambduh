@@ -11,7 +11,7 @@ let aws = require("aws-sdk"),
 function lambdaTask(task, extractionLocation, localRoot, configuration) {
     return allExistingFunctions()
         .then((existingFunctions) => {
-            return npmInstall(extractionLocation, localRoot, task, configuration)
+            return npmInstall(extractionLocation, localRoot, task)
                 .then(() => {
                     return existingFunctions;
                 });
@@ -47,7 +47,7 @@ function allExistingFunctions() {
     });
 }
 
-function npmInstall(extractionLocation, localRoot, task, configuration) {
+function npmInstall(extractionLocation, localRoot, task) {
     return setPackageJson(extractionLocation, task)
         .then(() => {
             return new Promise((resolve, reject) => {
@@ -94,8 +94,8 @@ function npmInstall(extractionLocation, localRoot, task, configuration) {
 }
 
 function setPackageJson(extractionLocation, task) {
-    if (!task.alternatePackageJson)
-        return null;
+    if (!task || !task.alternatePackageJson)
+        return Promise.resolve();
     else
         return new Promise((resolve, reject) => {
             // Copy the alternate package.json to package.json
@@ -111,21 +111,58 @@ function setPackageJson(extractionLocation, task) {
         });
 }
 
-function copyNodeModules(extractionLocation, codeLocation) {
+function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) {
     return new Promise((resolve, reject) => {
-        fs.stat(`${extractionLocation}/node_modules`, (err, stats) => {
-            if (!err) {
-                fs.copy(`${extractionLocation}/node_modules`, `${codeLocation}/node_modules`, (err) => {
+        // Get the files in the end path of the function
+        fs.readdir(`${extractionLocation}${path.dirname(filePath)}`, (err, files) => {
+            if (!!err)
+                reject(err);
+            else
+                resolve(files);
+        });
+    })
+    .then((files) => {
+        // If a package.json exists in the file path, use that
+        if (files.indexOf(`package.json`) < 0)
+            return false;
+        else
+            return new Promise((resolve, reject) => {
+                // Copy the package.json, and NPM install it
+                fs.copy(`${extractionLocation}${path.dirname(filePath)}/package.json`, `${codeLocation}/package.json`, (err) => {
                     if (!!err)
                         reject(err);
                     else
                         resolve();
                 });
-            } else if (!!err && (err.message.search(/no such file or directory/g) >= 0)) {
-                resolve();
-            } else
-                reject(err);
-        });
+            })
+                .then(() => {
+                    // NPM Install on the codeLocation
+                    return npmInstall(codeLocation, localRoot)
+                        .then(() => {
+                            return true;
+                        });
+                })
+                ;
+    })
+    .then((modulesLoaded) => {
+        if (modulesLoaded)
+            return null;
+        else
+            return new Promise((resolve, reject) => {
+                fs.stat(`${extractionLocation}/node_modules`, (err, stats) => {
+                    if (!err) {
+                        fs.copy(`${extractionLocation}/node_modules`, `${codeLocation}/node_modules`, (err) => {
+                            if (!!err)
+                                reject(err);
+                            else
+                                resolve();
+                        });
+                    } else if (!!err && (err.message.search(/no such file or directory/g) >= 0)) {
+                        resolve();
+                    } else
+                        reject(err);
+                });
+            });
     });
 }
 
@@ -215,7 +252,7 @@ function deployFunction(functionDefinition, existingFunctions, configuration, ex
 
     let codeLocation = `${localRoot}/packaging/${functionName}`;
 
-    return copyNodeModules(extractionLocation, codeLocation)
+    return copyNodeModules(extractionLocation, codeLocation, functionDefinition.source, localRoot)
         .then(() => {
             return copyRequiredFile(codeLocation, extractionLocation, functionDefinition.source);
             // return new Promise((resolve, reject) => {
