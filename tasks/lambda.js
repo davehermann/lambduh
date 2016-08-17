@@ -122,10 +122,22 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
         });
     })
     .then((files) => {
-        // If a package.json exists in the file path, use that
-        if (files.indexOf(`package.json`) < 0)
+        // If a node_modules exists in the function path, use the node_modules
+        if (files.indexOf(`node_modules`) >= 0) {
+            return new Promise((resolve, reject) => {
+                console.log(`Moving node_modules from ${extractionLocation}${path.dirname(filePath)} to ${codeLocation}`);
+
+                fs.move(`${extractionLocation}${path.dirname(filePath)}/node_modules`, `${codeLocation}/node_modules`, (err) => {
+                    if (!!err)
+                        reject(err);
+                    else
+                        resolve(true);
+                });
+            });
+        } else if (files.indexOf(`package.json`) < 0)
             return false;
         else
+            // If a package.json exists in the file path, use that
             return new Promise((resolve, reject) => {
                 // Copy the package.json, and NPM install it
                 fs.copy(`${extractionLocation}${path.dirname(filePath)}/package.json`, `${codeLocation}/package.json`, (err) => {

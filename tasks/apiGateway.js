@@ -252,9 +252,17 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
                 // Add integration response of 200 with an empty application/json mapping template
 
                 // Add headers to integration response
+                // Configure to use AWS-necessary (Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token),
+                //      and any defined in the endpoint
+                let allowedHeaders = [ "Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token" ];
+                if (!!endpoint.headers)
+                    endpoint.headers.forEach((header) => {
+                        allowedHeaders.push(header.name);
+                    });
+
                 let headers = [
-                    // Access-Control-Allow-Headers = 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
-                    { "name":"Access-Control-Allow-Headers", "value":"Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token" },
+                    // Access-Control-Allow-Headers = allowedHeaders
+                    { "name":"Access-Control-Allow-Headers", "value": allowedHeaders.join(",") },
                     // Access-Control-Allow-Methods = 'OPTIONS,' and whatever the resource method is
                     { "name":"Access-Control-Allow-Methods", "value":([resourceChain.method.httpMethod, "OPTIONS"]).join(",") },
                     // Access-Control-Allow-Origin = the configured CORS origin

@@ -158,7 +158,7 @@ function runTasks(configuration) {
                 let task = configuration.tasks.shift();
 
                 if (task.disabled)
-                    resolve();
+                    processTask();
                 else {
                     let taskPromise = null;
 
