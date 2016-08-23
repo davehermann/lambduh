@@ -6,8 +6,8 @@
   "main": "deploy.js",
   "author": "Dave Hermann <hermann.dp+github@gmail.com>",
   "dependencies": {
-    "adm-zip": "^0.4.7",
     "fs-extra": "^0.26.7",
+    "jszip": "^3.1.1",
     "mime-types": "^2.1.10",
     "tar": "^2.2.1",
     "uuid": "^2.0.1"

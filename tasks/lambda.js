@@ -2,7 +2,7 @@
 
 let aws = require("aws-sdk"),
     fs = require("fs-extra"),
-    admZip = require("adm-zip"),
+    jsZip = require("jszip"),
     lambda = new aws.Lambda({ apiVersion: "2015-03-31" }),
     path = require("path"),
     uuid = require("uuid"),
@@ -218,10 +218,7 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
 
 function addFilesToZip(directoryToScan, functionName) {
     // Zip the entire function directory
-    // NOTE: ADM-Zip doesn't work correctly for the helper-functions addLocalFile and addLocalFolder
-    //  http://stackoverflow.com/questions/33296396/adm-zip-zipping-files-as-directories
-    // Use addFile manually configuring the permissions
-    let zip = new admZip();
+    let zip = new jsZip();
 
     return new Promise((resolve, reject) => {
         let fileItems = [];
@@ -235,9 +232,30 @@ function addFilesToZip(directoryToScan, functionName) {
             });
     })
     .then((fileItems) => {
+        let entryList = [];
+
         fileItems.forEach((fsObject) => {
-            zip.addFile(`${functionName}${fsObject.path.replace(directoryToScan, "")}`, fs.readFileSync(`${fsObject.path}`), "", 0o644 << 16);
+            let fullPath = `${functionName}${fsObject.path.replace(directoryToScan, "")}`;
+
+            if (fullPath.search(/node\_modules/gi) >= 0) {
+                let pathParts = fullPath.split(`/`), current = ``, text = ``;
+
+                while (current != `node_modules`) {
+                    current = pathParts.shift();
+
+                    text += `${current}/`;
+                }
+                text += `${pathParts[0]}`;
+
+                if (entryList.indexOf(text) < 0)
+                    entryList.push(text);
+            } else
+                entryList.push(fullPath);
+
+            zip.file(fullPath, fs.readFileSync(`${fsObject.path}`));
         });
+
+        console.log(`In Code Zip File:\n`, entryList);
 
         return zip;
     });
@@ -320,48 +338,16 @@ function deployFunction(functionDefinition, existingFunctions, configuration, ex
     return copyNodeModules(extractionLocation, codeLocation, functionDefinition.source, localRoot)
         .then(() => {
             return copyRequiredFile(codeLocation, extractionLocation, functionDefinition.source);
-            // return new Promise((resolve, reject) => {
-            // console.log("Copying ", extractionLocation + functionDefinition.source, " to ", codeLocation + functionDefinition.source);
-
-                // // Create the directory
-                // fs.mkdirsSync(`${codeLocation}${path.dirname(functionDefinition.source)}`);
-
-                // fs.copy(`${extractionLocation}${functionDefinition.source}`, `${codeLocation}${functionDefinition.source}`, (err) => {
-                //     if (!!err)
-                //         reject(err)
-                //     else {
-                //         resolve();
-                //     }
-                // });
-            // });
         })
         .then(() => {
             return addFilesToZip(codeLocation, functionName)
                 .then((zip) => {
-                    let entryList = [];
-                    zip.getEntries().forEach((item) => {
-                        if (item.entryName.search(/node\_modules/gi) >= 0) {
-                            let pathParts = item.entryName.split(`/`), current = ``, text = `Directory: `;
-
-                            while (current != `node_modules`) {
-                                current = pathParts.shift();
-
-                                text += `${current}/`;
-                            }
-                            text += `${pathParts[0]}`;
-
-                            if (entryList.indexOf(text) < 0)
-                                entryList.push(text);
-                        } else
-                            entryList.push(`${item.isDirectory ? "Directory" : "File"}: ${item.entryName}`);
-                    });
-
-                    console.log(`In Code Zip File:\n`, entryList);
-
-                    return zip;
-                });
+                    return zip
+                        .generateAsync({ type: `nodebuffer` });
+                })
+                ;
         })
-        .then((zip) => {
+        .then((zipBuffer) => {
             return new Promise((resolve, reject) => {
                 let functionConfiguration = new (function() {
                     this.FunctionName = functionName;
@@ -374,7 +360,7 @@ function deployFunction(functionDefinition, existingFunctions, configuration, ex
                 if (!functionExists) {
                     functionConfiguration.Runtime = "nodejs4.3";
                     console.log("Creating Lambda Function: ", functionConfiguration);
-                    functionConfiguration.Code = { ZipFile: zip.toBuffer() };
+                    functionConfiguration.Code = { ZipFile: zipBuffer };
 
                     lambda.createFunction(functionConfiguration, (err, data) => {
                         if (!!err)
@@ -395,7 +381,7 @@ function deployFunction(functionDefinition, existingFunctions, configuration, ex
 
                             let codeUpdate = new (function() {
                                 this.FunctionName = functionName;
-                                this.ZipFile = zip.toBuffer();
+                                this.ZipFile = zipBuffer;
                             })();
                             console.log("Updating code");
                             lambda.updateFunctionCode(codeUpdate, (err, data) => {
