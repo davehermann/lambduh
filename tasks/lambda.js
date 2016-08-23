@@ -50,10 +50,47 @@ function allExistingFunctions() {
 function npmInstall(extractionLocation, localRoot, task) {
     return setPackageJson(extractionLocation, task)
         .then(() => {
+            // Generate a .npmrc file in the extractionLocation
+            return new Promise((resolve, reject) => {
+                fs.readFile(`./npmrc_template`, { encoding: `utf8` }, (err, contents) => {
+                    if (!!err)
+                        reject(err);
+                    else
+                        resolve(contents);
+                });
+            })
+                .then((npmrc) => {
+                    console.log(`npmrc template:`, npmrc);
+                    return npmrc
+                        .replace(/\%EXTRACTIONLOCATION\%/g, extractionLocation)
+                        .replace(/\%LOCALROOT\%/g, localRoot)
+                        ;
+                })
+                .then((npmrc) => {
+                    console.log(`npmrc:`, npmrc);
+
+                    return new Promise((resolve, reject) => {
+                        console.log(`Writing to ${extractionLocation}/.npmrc`);
+
+                        fs.writeFile(`${extractionLocation}/.npmrc`, npmrc, { encoding: `utf8`, mode: 0o600 }, (err) => {
+                            if (!!err)
+                                reject(err);
+                            else
+                                resolve();
+                        });
+                    });
+                })
+                ;
+        })
+        .then(() => {
             return new Promise((resolve, reject) => {
                 fs.mkdirsSync(`${localRoot}/npmConfig/cache`);
+                fs.mkdirsSync(`${localRoot}/home`);
 
-                let npm = spawn("npm", ["install", "--production", "--prefix", extractionLocation, "--userconfig", `${localRoot}/npmConfig`, "--cache", `${localRoot}/npmConfig/cache`], { cwd: extractionLocation }),
+                console.log(`Run NPM Install in ${extractionLocation}`);
+
+                // let npm = spawn("npm", ["install", "--production", "--prefix", extractionLocation, "--userconfig", `${localRoot}/npmConfig`, "--cache", `${localRoot}/npmConfig/cache`], { cwd: extractionLocation }),
+                let npm = spawn(`env`, [`HOME=${localRoot}/home`, "npm", "install", "--production"], { cwd: extractionLocation }),
                     runDetails = "",
                     errDetails = "";
 
@@ -64,6 +101,7 @@ function npmInstall(extractionLocation, localRoot, task) {
                     errDetails += data;
                 });
                 npm.on("error", (err) => {
+                    console.log(`ERROR:`, err);
                     reject(err);
                 });
                 npm.on("close", (exitCode) => {
@@ -99,7 +137,7 @@ function setPackageJson(extractionLocation, task) {
     else
         return new Promise((resolve, reject) => {
             // Copy the alternate package.json to package.json
-            fs.copy(`${extractionLocation}/${task.alternatePackageJson}`, `${extractionLocation}/package.json`, { clobber: true }, (err) => {
+            fs.copy(path.normalize(`${extractionLocation}/${task.alternatePackageJson}`), path.normalize(`${extractionLocation}/package.json`), { clobber: true }, (err) => {
                 if (!!err) {
                     console.log(err);
                     reject(err);
@@ -125,9 +163,9 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
         // If a node_modules exists in the function path, use the node_modules
         if (files.indexOf(`node_modules`) >= 0) {
             return new Promise((resolve, reject) => {
-                console.log(`Moving node_modules from ${extractionLocation}${path.dirname(filePath)} to ${codeLocation}`);
+                console.log(`Moving node_modules from ${path.normalize(`${extractionLocation}${path.dirname(filePath)}`)} to ${path.normalize(codeLocation)}`);
 
-                fs.move(`${extractionLocation}${path.dirname(filePath)}/node_modules`, `${codeLocation}/node_modules`, (err) => {
+                fs.move(path.normalize(`${extractionLocation}${path.dirname(filePath)}/node_modules`), path.normalize(`${codeLocation}/node_modules`), (err) => {
                     if (!!err)
                         reject(err);
                     else
@@ -140,7 +178,7 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
             // If a package.json exists in the file path, use that
             return new Promise((resolve, reject) => {
                 // Copy the package.json, and NPM install it
-                fs.copy(`${extractionLocation}${path.dirname(filePath)}/package.json`, `${codeLocation}/package.json`, (err) => {
+                fs.copy(path.normalize(`${extractionLocation}${path.dirname(filePath)}/package.json`), path.normalize(`${codeLocation}/package.json`), (err) => {
                     if (!!err)
                         reject(err);
                     else
@@ -161,9 +199,9 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
             return null;
         else
             return new Promise((resolve, reject) => {
-                fs.stat(`${extractionLocation}/node_modules`, (err, stats) => {
+                fs.stat(path.normalize(`${extractionLocation}/node_modules`), (err, stats) => {
                     if (!err) {
-                        fs.copy(`${extractionLocation}/node_modules`, `${codeLocation}/node_modules`, (err) => {
+                        fs.copy(path.normalize(`${extractionLocation}/node_modules`), path.normalize(`${codeLocation}/node_modules`), (err) => {
                             if (!!err)
                                 reject(err);
                             else
@@ -206,39 +244,54 @@ function addFilesToZip(directoryToScan, functionName) {
 }
 
 function copyRequiredFile(codeLocation, extractionLocation, filePath) {
+    let destination = path.normalize(`${codeLocation}${filePath}`),
+        source = path.normalize(`${extractionLocation}${filePath}`);
+
     return new Promise((resolve, reject) => {
-    console.log("Copying ", `${extractionLocation}${filePath}`, " to ", `${codeLocation}${filePath}`);
+        // Determine if the file exists
 
-        // // Create the directory
-        // fs.mkdirsSync(`${codeLocation}${path.dirname(filePath)}`);
+        fs.stat(destination, (err, stats) => {
+            if (!!err || !stats) {
+                console.log(`${destination} does not exist. Copying from ${source}`);
 
-        fs.copy(`${extractionLocation}${filePath}`, `${codeLocation}${filePath}`, (err) => {
-            if (!!err)
-                reject(err);
-            else
-                resolve();
+                // // Create the directory
+                // fs.mkdirsSync(`${codeLocation}${path.dirname(filePath)}`);
+
+                fs.copy(source, destination, (err) => {
+                    if (!!err)
+                        reject(err);
+                    else
+                        resolve(true);
+                });
+            } else {
+                console.log(`Skipping ${source} as ${destination} exists`);
+                resolve(false);
+            }
         });
     })
-    .then(() => {
-        // Read the source file, and extract any requires
-        let sourceFile = fs.readFileSync(`${codeLocation}${filePath}`, "utf8");
+    .then((newlyCopied) => {
+        if (newlyCopied) {
+            // Read the source file, and extract any requires
+            let sourceFile = fs.readFileSync(`${codeLocation}${filePath}`, "utf8");
 
-        let foundRequires = sourceFile.match(/require\(\".+\"\)/g);
-        console.log("Requires: ", foundRequires);
-        let loadRequires = [];
+            let foundRequires = sourceFile.match(/require\(\".+\"\)/g);
+            console.log("Requires: ", foundRequires);
+            let loadRequires = [];
 
-        if (!!foundRequires)
-            foundRequires.forEach((req) => {
-                let requireItem = req.match(/\(\"(.+)\"\)/g);
-                if (RegExp.$1.substr(0, 1) == ".")
-                    loadRequires.push(RegExp.$1);
-            });
-        console.log("Load: ", loadRequires);
+            if (!!foundRequires)
+                foundRequires.forEach((req) => {
+                    let requireItem = req.match(/\(\"(.+)\"\)/g);
+                    if (RegExp.$1.substr(0, 1) == ".")
+                        loadRequires.push(RegExp.$1);
+                });
+            console.log("Load: ", loadRequires);
 
-        return loadRequires;
+            return loadRequires;
+        } else
+            return null;
     })
     .then((loadRequires) => {
-        if (loadRequires.length == 0)
+        if ((loadRequires === null) || (loadRequires.length == 0))
             return null;
         else {
             let pRequires = [];
@@ -285,18 +338,25 @@ function deployFunction(functionDefinition, existingFunctions, configuration, ex
         .then(() => {
             return addFilesToZip(codeLocation, functionName)
                 .then((zip) => {
-                    let displayedNodeModules = 0;
-                    console.log("In Code Zip File: ", zip.getEntries().map((item) => {
+                    let entryList = [];
+                    zip.getEntries().forEach((item) => {
                         if (item.entryName.search(/node\_modules/gi) >= 0) {
-                            if (displayedNodeModules < 10) {
-                                displayedNodeModules++;
-                                return `Directory: node_modules with ${item.entryName}`;
-                            } else {
-                                return null;
+                            let pathParts = item.entryName.split(`/`), current = ``, text = `Directory: `;
+
+                            while (current != `node_modules`) {
+                                current = pathParts.shift();
+
+                                text += `${current}/`;
                             }
+                            text += `${pathParts[0]}`;
+
+                            if (entryList.indexOf(text) < 0)
+                                entryList.push(text);
                         } else
-                            return `${item.isDirectory ? "Directory" : "File"}: ${item.entryName}`;
-                    }).filter((item) => { return item !== null; }));
+                            entryList.push(`${item.isDirectory ? "Directory" : "File"}: ${item.entryName}`);
+                    });
+
+                    console.log(`In Code Zip File:\n`, entryList);
 
                     return zip;
                 });
