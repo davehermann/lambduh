@@ -113,9 +113,16 @@ function getResource(endpoint, apiId, existingResources) {
                 lowestParent = parentItem;
         });
 
+        console.log(`Lowest parent:`, lowestParent);
+
         let createPath = endpoint.path.replace(new RegExp("^" + lowestParent.path, "i"), "");
         let createParts = createPath.length > 0 ? createPath.split("/") : [];
         console.log("Path: ", createPath, " to parts: ", createParts);
+
+        if ((createParts.length > 0) && (createParts[0].length == 0)) {
+            createParts.shift();
+            console.log(`Removed empty path part at [0]`);
+        }
 
         // Create each missing part of the path as a new resource
         (function createPart(parentResource) {
