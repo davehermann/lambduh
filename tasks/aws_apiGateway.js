@@ -138,7 +138,15 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
                                 mappingTemplateItems.push(inputMapping(header));
                             });
 
-                        this["application/json"] = `{${mappingTemplateItems.join(",")}}`
+                        if (method.httpMethod.toUpperCase() == "POST")
+                            this[`application/json`] = `
+#set($jsonBody = $input.json('$'))
+#set($jsonLength = $jsonBody.length())
+#set($jsonToUse = $jsonBody.substring(1))
+{${mappingTemplateItems.join(`,`)},$jsonToUse
+`
+                        else
+                            this["application/json"] = `{${mappingTemplateItems.join(",")}}`
                     })();
 
                 this.uri = functionUris.versionUri;
