@@ -445,7 +445,13 @@ function clearPermissions(newPermission) {
         lambda.getPolicy(findPolicy, (err, data) => {
             if (!!err) {
                 console.log(err);
-                reject(err);
+
+                // In the case of no policy previously existing, continue without attempting deletion
+                if (err.code == `ResourceNotFoundException`) {
+                    console.log(`Skipping removal of existing permissions as no policy object exists`);
+                    resolve(null);
+                } else
+                    reject(err);
             } else {
                 console.log(`Existing Policy: `, data);
                 resolve(data);
@@ -453,22 +459,25 @@ function clearPermissions(newPermission) {
         });
     })
         .then((existingPolicy) => {
-            // Find any policy statements that have the same FunctionName, Principal and SourceArn
-            let attachedPolicies = JSON.parse(existingPolicy.Policy).Statement,
-                matchingPolicies = [];
-            console.log(`${attachedPolicies.length} attached to policy`);
+            if (!!existingPolicy) {
+                // Find any policy statements that have the same FunctionName, Principal and SourceArn
+                let attachedPolicies = JSON.parse(existingPolicy.Policy).Statement,
+                    matchingPolicies = [];
+                console.log(`${attachedPolicies.length} attached to policy`);
 
-            attachedPolicies.forEach((policy) => {
-                if (
-                    (policy.Resource == newPermission.FunctionName)
-                    && (policy.Principal.Service == newPermission.Principal)
-                    && (policy.Condition.ArnLike[`AWS:SourceArn`] == newPermission.SourceArn)
-                )
-                    matchingPolicies.push(policy);
-            });
-            console.log(`${matchingPolicies.length} matching will be removed`);
+                attachedPolicies.forEach((policy) => {
+                    if (
+                        (policy.Resource == newPermission.FunctionName)
+                        && (policy.Principal.Service == newPermission.Principal)
+                        && (policy.Condition.ArnLike[`AWS:SourceArn`] == newPermission.SourceArn)
+                    )
+                        matchingPolicies.push(policy);
+                });
+                console.log(`${matchingPolicies.length} matching will be removed`);
 
-            return matchingPolicies;
+                return matchingPolicies;
+            } else
+                return [];
         })
         .then((matchingPolicies) => {
             // Remove each matching policy
