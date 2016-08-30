@@ -154,11 +154,16 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
 
                         if (method.httpMethod.toUpperCase() == "POST")
                             this[`application/json`] = `
+#set($rawBody = $input.body)
+#if($rawBody == 'null')
 #set($jsonBody = $input.json('$'))
 #set($jsonLength = $jsonBody.length())
 #set($jsonToUse = $jsonBody.substring(1))
 {${mappingTemplateItems.join(`,`)},$jsonToUse
-`
+#else
+{${mappingTemplateItems.join(",")}}
+#end
+`;
                         else
                             this["application/json"] = `{${mappingTemplateItems.join(",")}}`
                     })();
