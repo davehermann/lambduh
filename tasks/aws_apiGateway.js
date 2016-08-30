@@ -124,6 +124,20 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
                 this.type = "AWS";
                 this.integrationHttpMethod = "POST";
 
+                // Map any path parameters to input parameters
+                if (resource.path.search(/\{.*\}/g) >= 0) {
+                    if (!parameters)
+                        parameters = [];
+
+                    let pathParts = resource.path.split(`/`);
+                    pathParts.forEach((part) => {
+                        if (part.substr(0, 1) == `{`) {
+                            let param = part.substr(1, part.length - 2);
+                            parameters.push({ name: param, parameterName: param });
+                        }
+                    });
+                }
+
                 if (!!headers || (!!parameters && (method.httpMethod.toUpperCase() == "GET")))
                     this.requestTemplates = new (function() {
                         // Create a JSON string with each parameter

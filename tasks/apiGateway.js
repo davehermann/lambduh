@@ -72,10 +72,18 @@ function existingApiResources(apiId) {
 }
 
 function createMappings(task, apiId, existingResources, existingFunctions, configuration) {
-    let allMappings = [];
+    let endpointsToProcess = [];
 
-    task.endpoints.forEach((endpoint) => {
-        let pEndpoint = getResource(endpoint, apiId, existingResources)
+    task.endpoints.forEach((endpoint) => { endpointsToProcess.push(endpoint); });
+
+    return processEndpoints(endpointsToProcess, task, apiId, existingResources, existingFunctions, configuration);
+}
+
+function processEndpoints(remainingEndpoints, task, apiId, existingResources, existingFunctions, configuration) {
+    if (remainingEndpoints.length > 0) {
+        let endpoint = remainingEndpoints.shift();
+
+        return getResource(endpoint, apiId, existingResources)
             .then((resource) => {
                 return addMethod(endpoint, resource, apiId);
             })
@@ -91,12 +99,12 @@ function createMappings(task, apiId, existingResources, existingFunctions, confi
             .then((resourceChain) => {
                 return addCorsMethod(endpoint, resourceChain, apiId, task);
             })
+            .then(() => {
+                return processEndpoints(remainingEndpoints, task, apiId, existingResources, existingFunctions, configuration);
+            })
             ;
-
-        allMappings.push(pEndpoint);
-    });
-
-    return Promise.all(allMappings);
+    } else
+        return null;
 }
 
 function getResource(endpoint, apiId, existingResources) {
@@ -141,6 +149,7 @@ function getResource(endpoint, apiId, existingResources) {
                         reject(err);
                     } else {
                         console.log("New Resource: ", data);
+                        existingResources.items.push(data);
                         createPart(data);
                     }
                 });
