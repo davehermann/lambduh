@@ -412,26 +412,95 @@ function functionConfiguration(functionName) {
     });
 }
 
-function addEventInvocationPermission(functionArn, sourceArn, sourcePrincipal) {
+function removePermissions(permissionList) {
+    if (permissionList.length > 0) {
+        let permissionToDrop = permissionList.shift();
+
+        return new Promise((resolve, reject) => {
+            lambda.removePermission({ FunctionName: permissionToDrop.Resource, StatementId: permissionToDrop.Sid }, (err, data) => {
+                if (!!err) {
+                    console.log(`Error dropping`, permissionToDrop.Sid, `: `, err);
+                    reject(err);
+                } else {
+                    console.log(`Dropped`, permissionToDrop.Sid);
+                    resolve();
+                }
+            });
+        })
+            .then(() => {
+                return removePermissions(permissionList);
+            })
+            ;
+    } else
+        return Promise.resolve();
+}
+
+function clearPermissions(newPermission) {
     return new Promise((resolve, reject) => {
-        let newPermission = new (function() {
-            this.FunctionName = functionArn;
-            this.StatementId = uuid.v4();
-            this.Action = "lambda:InvokeFunction";
-            this.Principal = sourcePrincipal;
-            this.SourceArn = sourceArn;
+        let findPolicy = new (function() {
+            this.FunctionName = newPermission.FunctionName;
+            if (!!newPermission.Qualifier)
+                this.Qualifier = newPermission.Qualifier;
         })();
-        console.log("Add Lambda Permission: ", newPermission);
-        lambda.addPermission(newPermission, (err, data) => {
+        lambda.getPolicy(findPolicy, (err, data) => {
             if (!!err) {
                 console.log(err);
                 reject(err);
             } else {
-                console.log("Lambda Permission Added: ", data);
+                console.log(`Existing Policy: `, data);
                 resolve(data);
             }
         });
-    });
+    })
+        .then((existingPolicy) => {
+            // Find any policy statements that have the same FunctionName, Principal and SourceArn
+            let attachedPolicies = JSON.parse(existingPolicy.Policy).Statement,
+                matchingPolicies = [];
+            console.log(`${attachedPolicies.length} attached to policy`);
+
+            attachedPolicies.forEach((policy) => {
+                if (
+                    (policy.Resource == newPermission.FunctionName)
+                    && (policy.Principal.Service == newPermission.Principal)
+                    && (policy.Condition.ArnLike[`AWS:SourceArn`] == newPermission.SourceArn)
+                )
+                    matchingPolicies.push(policy);
+            });
+            console.log(`${matchingPolicies.length} matching will be removed`);
+
+            return matchingPolicies;
+        })
+        .then((matchingPolicies) => {
+            // Remove each matching policy
+            return removePermissions(matchingPolicies);
+        })
+        ;
+}
+
+function addEventInvocationPermission(functionArn, sourceArn, sourcePrincipal) {
+    let newPermission = new (function() {
+        this.FunctionName = functionArn;
+        this.StatementId = uuid.v4();
+        this.Action = "lambda:InvokeFunction";
+        this.Principal = sourcePrincipal;
+        this.SourceArn = sourceArn;
+    })();
+    console.log("Add Lambda Permission: ", newPermission);
+    return clearPermissions(newPermission)
+        .then(() => {
+            return new Promise((resolve, reject) => {
+                lambda.addPermission(newPermission, (err, data) => {
+                    if (!!err) {
+                        console.log(err);
+                        reject(err);
+                    } else {
+                        console.log("Lambda Permission Added: ", data);
+                        resolve(data);
+                    }
+                });
+            });
+        })
+        ;
 }
 
 function createVersion(functionArn) {
