@@ -20,7 +20,7 @@ function lambdaTask(task, extractionLocation, localRoot, configuration) {
             let definitionList = [];
 
             task.functions.forEach((functionDefinition) => {
-                definitionList.push(deployFunction(functionDefinition, existingFunctions, configuration, extractionLocation, localRoot));
+                definitionList.push(deployFunction(functionDefinition, existingFunctions, task, configuration, extractionLocation, localRoot));
             });
 
             return Promise.all(definitionList);
@@ -327,7 +327,7 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
     ;
 }
 
-function deployFunction(functionDefinition, existingFunctions, configuration, extractionLocation, localRoot) {
+function deployFunction(functionDefinition, existingFunctions, task, configuration, extractionLocation, localRoot) {
     console.log(functionDefinition);
     let functionName = `ld_${!!configuration.applicationName ? configuration.applicationName + "_" : ""}${functionDefinition.name}`;
 
@@ -353,8 +353,8 @@ function deployFunction(functionDefinition, existingFunctions, configuration, ex
                     this.FunctionName = functionName;
                     this.Role = functionDefinition.iamRoleArn;
                     this.Handler = `${functionName}${path.dirname(functionDefinition.source)}/${path.basename(functionDefinition.source, path.extname(functionDefinition.source))}.lambda`;
-                    this.MemorySize = !!functionDefinition.memorySize ? functionDefinition.memorySize : 128;
-                    this.Timeout = !!functionDefinition.timeout ? functionDefinition.timeout : 5;
+                    this.MemorySize = !!functionDefinition.memorySize ? functionDefinition.memorySize : (!!task.default && !!task.default.memorySize ? task.default.memorySize : 128);
+                    this.Timeout = !!functionDefinition.timeout ? functionDefinition.timeout : (!!task.default && !!task.default.timeout ? task.default.timeout : 5);
                 })();
 
                 if (!functionExists) {
