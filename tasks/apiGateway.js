@@ -58,14 +58,35 @@ function applicationApi(existingApis, configuration) {
         });
 }
 
-function existingApiResources(apiId) {
+function existingApiResources(apiId, position) {
     return new Promise((resolve, reject) => {
-        apiGateway.getResources({ restApiId: apiId }, (err, data) => {
+        let resourcesToGet = new (function() {
+            this.restApiId = apiId;
+            if (!!position)
+                this.position = position;
+        })();
+
+        apiGateway.getResources(resourcesToGet, (err, data) => {
             if (!!err)
                 reject(err);
             else {
                 console.log("API Resources: ", JSON.stringify(data, null, 4));
-                resolve({ apiId: apiId, existingResources: data});
+
+                if (!!data.position) {
+                    let foundResources = data.items;
+
+                    existingApiResources(apiId, data.position)
+                        .then((additionalData) => {
+                            foundResources = foundResources.concat(additionalData.existingResources.items);
+
+                            resolve({ apiId: apiId, existingResources: { items: foundResources } });
+                        })
+                        .catch((err) => {
+                            reject(err);
+                        })
+                        ;
+                } else
+                    resolve({ apiId: apiId, existingResources: data});
             }
         })
     });
