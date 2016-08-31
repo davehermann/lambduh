@@ -343,7 +343,7 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
             return addFilesToZip(codeLocation, functionName)
                 .then((zip) => {
                     return zip
-                        .generateAsync({ type: `nodebuffer` });
+                        .generateAsync({ type: `nodebuffer`, compression: `DEFLATE`, compressionOptions: { level: 9 } });
                 })
                 ;
         })
