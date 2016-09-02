@@ -342,8 +342,17 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
         .then(() => {
             return addFilesToZip(codeLocation, functionName)
                 .then((zip) => {
+                    let zipOptions = new (function() {
+                        this.type = `nodebuffer`;
+
+                        if (!!task.compressionLevel && (task.compressionLevel > 0)) {
+                            this.compression = `DEFLATE`;
+                            this.compressionOptions = { level: task.compressionLevel };
+                        }
+                    })();
+
                     return zip
-                        .generateAsync({ type: `nodebuffer`, compression: `DEFLATE`, compressionOptions: { level: 9 } });
+                        .generateAsync(zipOptions);
                 })
                 ;
         })
