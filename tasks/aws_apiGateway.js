@@ -152,20 +152,22 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
                                 mappingTemplateItems.push(inputMapping(header));
                             });
 
+                        let requestor = `"requestor":{"ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}`;
+
                         if (method.httpMethod.toUpperCase() == "POST")
                             this[`application/json`] = `
 #set($rawBody = $input.body)
 #if($rawBody == {})
-{${mappingTemplateItems.join(",")}}
+{${mappingTemplateItems.join(",")},${requestor}}
 #else
 #set($jsonBody = $input.json('$'))
 #set($jsonLength = $jsonBody.length())
 #set($jsonToUse = $jsonBody.substring(1))
-{${mappingTemplateItems.join(`,`)},$jsonToUse
+{${mappingTemplateItems.join(`,`)},${requestor},$jsonToUse
 #end
 `;
                         else
-                            this["application/json"] = `{${mappingTemplateItems.join(",")}}`
+                            this["application/json"] = `{${mappingTemplateItems.join(",")},${requestor}}`
                     })();
 
                 this.uri = functionUris.versionUri;
