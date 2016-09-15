@@ -225,6 +225,11 @@ JSON configuration and detailed description:
             + *Suffix*: `tar.gz`
             + **Recommend:** *Prefix* of your key path if you use one
 
+## License
+
+This is licensed under the GPLv3.
+Details are in [License.txt](./License.txt)
+
 ## To do:
 
 + General
