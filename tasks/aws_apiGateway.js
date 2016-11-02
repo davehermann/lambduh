@@ -114,7 +114,7 @@ function inputMapping(parameter) {
     return paramString;
 }
 
-function addLambdaIntegrationRequest(method, headers, parameters, resource, apiId, applicationName, functionName, awsRegion, awsAccountId, knownLambdaFunctions, task) {
+function addLambdaIntegrationRequest(method, headers, parameters, endpointConfiguration, resource, apiId, applicationName, functionName, awsRegion, awsAccountId, knownLambdaFunctions, task) {
     return versionAndAliasLambdaFunction(applicationName, functionName, awsRegion, knownLambdaFunctions, task)
         .then((functionUris) => {
             let newIntegration = new (function() {
@@ -138,7 +138,7 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
                     });
                 }
 
-                if (!!headers || (!!parameters && (method.httpMethod.toUpperCase() == "GET")))
+                if (!!headers || (!!parameters && (method.httpMethod.toUpperCase() == "GET")) || !!endpointConfiguration)
                     this.requestTemplates = new (function() {
                         // Create a JSON string with each parameter
                         let mappingTemplateItems = [];
@@ -153,6 +153,9 @@ function addLambdaIntegrationRequest(method, headers, parameters, resource, apiI
                             });
 
                         let requestor = `"requestor":{"ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}`;
+
+                        if (!!endpointConfiguration)
+                            mappingTemplateItems.push(`"endpointConfiguration": ${JSON.stringify(endpointConfiguration)}`);
 
                         if (method.httpMethod.toUpperCase() == "POST")
                             this[`application/json`] = `

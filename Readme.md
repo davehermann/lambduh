@@ -93,7 +93,7 @@ JSON configuration and detailed description:
         "stage": "nameYourStage",
         "cors": { "origin": "*" },
         "endpoints": [
-            { "path": "/request/path/from/root/{optionalParameters}", "method": "GET", "functionName": "nameYourFunction", "headers": [{ "name": "headerName", "parameterName": "headerSentToLambda" }], "parameters": [{ "name":"query", "parameterName": "queryStringSentToLambda"}]}
+            { "path": "/request/path/from/root/{optionalParameters}", "method": "GET", "functionName": "nameYourFunction", "headers": [{ "name": "headerName", "parameterName": "headerSentToLambda" }], "parameters": [{ "name":"query", "parameterName": "queryStringSentToLambda"}], "endpointConfiguration": { "routeProp": "value", "routeArray": ["arr1", "arr2"] } }
         ]
     }
     ```
@@ -107,8 +107,15 @@ JSON configuration and detailed description:
         + Create a GET method for `/request/path/from/root/{optionalParameters}`
             + Add the header `headerName` to the method request
             + Add the query string parameter `query` to the method request
-            + Generate a body mapping template for the integration request with fields `optionalParameters`, `headerSentToLambda`, and `queryStringSentToLambda`
-                + `requestor: { ip, userAgent }` is also added
+            + Generate a body mapping template for the integration request with the following fields
+                + `optionalParameters`
+                + `headerSentToLambda`
+                + `queryStringSentToLambda`
+                + `endpointConfiguration`
+                    + Pass route constants defined in API Gateway to Lambda functions
+                    + Use for one function backing multiple routes with differing configurations
+                + `requestor: { ip, userAgent }`
+                    + **Always** includes the IP and User Agent string
             + Add a 200 response to the integration response
             + Add a 200 response to the method response
             + Creates a Lambda **function version** with a tag `nameYourStage`

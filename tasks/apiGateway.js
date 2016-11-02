@@ -205,6 +205,7 @@ function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, t
         method,
         endpoint.headers,
         endpoint.parameters,
+        endpoint.endpointConfiguration,
         resource,
         apiId,
         configuration.applicationName,
