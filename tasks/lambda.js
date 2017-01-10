@@ -380,6 +380,13 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
                         }
                     });
                 } else {
+                    // New Error thrown on update ({"errorMessage": "SubnetIds and SecurityIds must coexist or be both empty list.","errorType": "InvalidParameterValueException"})
+                    // Adding empty VPC configuration to mitigate
+                    functionConfiguration.VpcConfig = {
+                        SubnetIds: [],
+                        SecurityGroupIds: []
+                    }
+
                     console.log("Update Lambda Function: ", functionConfiguration);
                     lambda.updateFunctionConfiguration(functionConfiguration, (err, data) => {
                         if (!!err) {
