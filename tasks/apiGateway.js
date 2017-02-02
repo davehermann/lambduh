@@ -121,6 +121,16 @@ function processEndpoints(remainingEndpoints, task, apiId, existingResources, ex
                 return addCorsMethod(endpoint, resourceChain, apiId, task);
             })
             .then(() => {
+                // Rate limit to keep from running over a TooManyRequests exception
+                console.log(`Waiting 1 second to limit requests to AWS APIs`);
+
+                return new Promise((resolve, reject) => {
+                    setTimeout(function() {
+                        resolve();
+                    }, 1000);
+                })
+            })
+            .then(() => {
                 return processEndpoints(remainingEndpoints, task, apiId, existingResources, existingFunctions, configuration);
             })
             ;
