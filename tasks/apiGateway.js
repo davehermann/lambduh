@@ -122,7 +122,7 @@ function processEndpoints(remainingEndpoints, task, apiId, existingResources, ex
             })
             .then(() => {
                 // Rate limit to keep from running over a TooManyRequests exception
-                console.log(`Waiting 1 second to limit requests to AWS APIs`);
+                console.log(`Waiting 1 second to limit requests to AWS APIs (${remainingEndpoints.length} remaining to process)`);
 
                 return new Promise((resolve, reject) => {
                     setTimeout(function() {
