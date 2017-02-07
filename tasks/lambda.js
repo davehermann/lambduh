@@ -32,19 +32,40 @@ function lambdaTask(task, extractionLocation, localRoot, configuration) {
 }
 
 function allExistingFunctions() {
-    return new Promise((resolve, reject) => {
-        lambda.listFunctions(null, (err, functionData) => {
-            if (!!err)
-                reject(err);
-            else
-                resolve(functionData);
-        });
-    })
-    .then((fData) => {
-        console.log(fData);
+    console.log(`Loading Lambda function list`);
 
-        return fData;
-    });
+    return listLambdaFunctions(null)
+        .then((fData) => {
+            console.log(fData);
+
+            return fData;
+        });
+}
+
+function listLambdaFunctions(priorResults) {
+    if (!priorResults || (!!priorResults && !!priorResults.NextMarker)) {
+        return new Promise((resolve, reject) => {
+            let searchParams = null;
+
+            if (!!priorResults && !!priorResults.NextMarker)
+                searchParams = { Marker: priorResults.NextMarker };
+
+            lambda.listFunctions(searchParams, (err, functionData) => {
+                if (!!err)
+                    reject(err);
+                else
+                    resolve(functionData);
+            });
+        })
+            .then((fData) => {
+                // Combine the current list with the prior results
+                if (!!priorResults)
+                    fData.Functions = fData.Functions.concat(priorResults.Functions);
+
+                return listLambdaFunctions(fData)
+            });
+    } else
+        return Promise.resolve(priorResults);
 }
 
 function npmInstall(extractionLocation, localRoot, task) {
