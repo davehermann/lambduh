@@ -385,10 +385,10 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
                     this.Handler = `${functionName}${path.dirname(functionDefinition.source)}/${path.basename(functionDefinition.source, path.extname(functionDefinition.source))}.lambda`;
                     this.MemorySize = !!functionDefinition.memorySize ? functionDefinition.memorySize : (!!task.default && !!task.default.memorySize ? task.default.memorySize : 128);
                     this.Timeout = !!functionDefinition.timeout ? functionDefinition.timeout : (!!task.default && !!task.default.timeout ? task.default.timeout : 5);
+                    this.Runtime = !!functionDefinition.runtime ? functionDefinition.runtime : (!!task.default && !!task.default.runtime ? task.default.runtime : "nodejs4.3");
                 })();
 
                 if (!functionExists) {
-                    functionConfiguration.Runtime = "nodejs4.3";
                     console.log("Creating Lambda Function: ", functionConfiguration);
                     functionConfiguration.Code = { ZipFile: zipBuffer };
 
