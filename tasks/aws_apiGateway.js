@@ -380,5 +380,6 @@ module.exports.Method_LambdaIntegrationRequest = addLambdaIntegrationRequest;
 module.exports.Method_MockIntegrationRequest = addMockIntegrationRequest;
 module.exports.Method_AddIntegrationResponse = addIntegrationResponse;
 module.exports.Method_AddMethodResponse = addMethodResponse;
+module.exports.Method_CreateLambdaVersion = versionAndAliasLambdaFunction;
 
 module.exports.Deployment_Create = createDeployment;

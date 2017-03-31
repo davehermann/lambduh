@@ -25,6 +25,13 @@ function apiGatewayTask(task, configuration) {
                 });
         })
         .then((api) => {
+            return aliasNonEndpointFunctions(task, existingFunctions, configuration)
+                .then(() => {
+                    return api;
+                })
+                ;
+        })
+        .then((api) => {
             return pushToStage(task, api);
         })
         ;
@@ -98,6 +105,27 @@ function createMappings(task, apiId, existingResources, existingFunctions, confi
     task.endpoints.forEach((endpoint) => { endpointsToProcess.push(endpoint); });
 
     return processEndpoints(endpointsToProcess, task, apiId, existingResources, existingFunctions, configuration);
+}
+
+function aliasNonEndpointFunctions(task, existingFunctions, configuration) {
+    if (!!task.aliasNonEndpoints) {
+        let functionsToAlias = task.aliasNonEndpoints.filter(() => { return true; });
+        return processNonEndpoints(functionsToAlias, task, existingFunctions, configuration);
+    } else
+        return Promise.resolve();
+}
+
+function processNonEndpoints(remainingFunctions, task, existingFunctions, configuration) {
+    if (remainingFunctions.length > 0) {
+        let functionToAlias = remainingFunctions.shift();
+
+        return gatewayIntegration.Method_CreateLambdaVersion(configuration.applicationName, functionToAlias.functionName, configuration.awsRegion, existingFunctions, task)
+            .then(() => {
+                return processNonEndpoints(remainingFunctions, task, existingFunctions, configuration);
+            })
+            ;
+    } else
+        return Promise.resolve();
 }
 
 function processEndpoints(remainingEndpoints, task, apiId, existingResources, existingFunctions, configuration) {
