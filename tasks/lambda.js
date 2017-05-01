@@ -17,18 +17,28 @@ function lambdaTask(task, extractionLocation, localRoot, configuration) {
                 });
         })
         .then((existingFunctions) => {
-            let definitionList = [];
-
-            task.functions.forEach((functionDefinition) => {
-                definitionList.push(deployFunction(functionDefinition, existingFunctions, task, configuration, extractionLocation, localRoot));
-            });
-
-            return Promise.all(definitionList);
+            return deploySequentially(task.functions.filter(() => { return true; }), existingFunctions, task, configuration, extractionLocation, localRoot);
         })
-        // .catch((err) => {
-        //     throw err;
-        // })
+        .catch((err) => {
+            console.log("Function deployment error");
+            console.log(err);
+
+            throw err;
+        })
         ;
+}
+
+function deploySequentially(functionList, existingFunctions, task, configuration, extractionLocation, localRoot) {
+    if (functionList.length > 0) {
+        let functionDefinition = functionList.shift();
+
+        return deployFunction(functionDefinition, existingFunctions, task, configuration, extractionLocation, localRoot)
+            .then(() => {
+                return deploySequentially(functionList, existingFunctions, task, configuration, extractionLocation, localRoot);
+            })
+            ;
+    } else
+        return Promise.resolve();
 }
 
 function allExistingFunctions() {
@@ -194,7 +204,7 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
                 });
             });
         } else if (files.indexOf(`package.json`) < 0)
-            return false;
+            return Promise.resolve(false);
         else
             // If a package.json exists in the file path, use that
             return new Promise((resolve, reject) => {
@@ -210,14 +220,14 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
                     // NPM Install on the codeLocation
                     return npmInstall(codeLocation, localRoot)
                         .then(() => {
-                            return true;
+                            return Promise.resolve(true);
                         });
                 })
                 ;
     })
     .then((modulesLoaded) => {
         if (modulesLoaded)
-            return null;
+            return Promise.resolve(null);
         else
             return new Promise((resolve, reject) => {
                 fs.stat(path.normalize(`${extractionLocation}/node_modules`), (err, stats) => {
