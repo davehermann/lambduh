@@ -9,7 +9,10 @@ let aws = require("aws-sdk"),
     apiGatewayTask = require("./tasks/apiGateway.js"),
     mime = require("mime-types"),
     uuid = require("uuid"),
-    path = require("path");
+    path = require("path"),
+    log = require("./logger");
+
+log.level = "trace";
 
 let localRoot = "/tmp/deployment",
     extractionLocation = localRoot + "/extract";
@@ -17,18 +20,22 @@ let localRoot = "/tmp/deployment",
 const MAXLAMBDABUILDSPERFILE = 10;
 
 module.exports.lambda = function(evtData, context, callback) {
+    log.Trace(JSON.stringify(evtData));
+
     launchedBy(evtData, context)
         .then(() => {
             callback();
         })
         .catch((err) => {
-            console.log(err);
+            log.Error(err);
+
             callback(err);
         });
 }
 
 function launchedBy(evtData, context) {
     // Determine if the source of the invocation is a configuration file
+    // The source should always be an S3 record as the trigger will be either an archive to deploy, or the configuration file
     let s3Source = evtData.Records[0].s3,
         fileName = path.basename(s3Source.object.key);
 
@@ -46,7 +53,7 @@ function continueArchive(evtData, context) {
     let s3Source = evtData.Records[0].s3,
         fileName = path.basename(s3Source.object.key);
 
-    console.log(`Continuing processing with "${s3Source.object.key} in ${s3Source.bucket.name}"`);
+    log.Info(`Continuing processing with "${s3Source.object.key} in ${s3Source.bucket.name}"`);
 
     let s3 = new aws.S3({ apiVersion: '2006-03-01' });
     return new Promise((resolve, reject) => {
@@ -54,8 +61,9 @@ function continueArchive(evtData, context) {
             if (!!err)
                 reject(err);
             else {
+                // The body should be JSON
                 let storedConfig = data.Body.toString(`utf8`);
-                console.log(storedConfig);
+                log.Trace(storedConfig);
                 resolve(JSON.parse(storedConfig));
             }
         });
@@ -73,6 +81,8 @@ function processArchive(evtData, context, preprocessedConfiguration) {
             let arnParts = functionConfiguration.FunctionArn.split(":");
             awsRegion = arnParts[3];
             awsAccountId = arnParts[4];
+
+            log.Debug(`Running in ${awsRegion} for account id ${awsAccountId}`);
         })
         .then(() => {
             return cleanRoot();
@@ -84,45 +94,52 @@ function processArchive(evtData, context, preprocessedConfiguration) {
             return loadConfiguration(preprocessedConfiguration);
         })
         .then((configuration) => {
-            // To prevent running out of memory, rewrite the configuration file as-needed
-            let taskFile = [createFilePack(configuration)], lambdaCount = 0;
+            // Each task should be run as its own separate configuration file
+            // Some tasks should be broken down into separate steps
+            // This will prevent running out of memory or time on the Lambda instance
 
-            let addLambdaTask = (task) => {
-                let addTask = duplicateTask(task);
-                addTask.functions = [];
-                taskFile[taskFile.length - 1].tasks.push(addTask);
-
-                return addTask;
-            }
+            let taskFile = [];
 
             configuration.tasks.forEach((task) => {
                 if (!task.disabled) {
-                    if (task.type == `Lambda`) {
-                        let addTask = addLambdaTask(task);
+                    // Each task will, by default, be its own separately processed configuration
+                    let newConfiguration = new filePack(configuration);
+                    taskFile.push(newConfiguration);
 
-                        task.functions.forEach((thisFunction) => {
-                            if (lambdaCount >= MAXLAMBDABUILDSPERFILE) {
-                                lambdaCount = 0;
+                    switch (task.type) {
+                        // Lambda will split all functions into separate configurations of MAXLAMBDABUILDSPERFILE
+                        case "Lambda":
+                            // Create a copy of the array of functions
+                            let definedFunctions = task.functions.filter(() => { return true; });
 
-                                taskFile.push(createFilePack(configuration));
+                            let lambdaTask = duplicateLambdaTask(task);
+                            newConfiguration.tasks.push(lambdaTask);
 
-                                addTask = addLambdaTask(task);
+                            while (definedFunctions.length > 0) {
+                                if (lambdaTask.functions.length >= MAXLAMBDABUILDSPERFILE) {
+                                    newConfiguration = new filePack(configuration);
+                                    taskFile.push(newConfiguration);
+
+                                    lambdaTask = duplicateLambdaTask(task);
+                                    newConfiguration.tasks.push(lambdaTask);
+                                }
+
+                                let thisFunction = definedFunctions.shift();
+                                lambdaTask.functions.push(thisFunction);
                             }
+                            break;
 
-                            addTask.functions.push(thisFunction);
-
-                            lambdaCount++;
-                        });
-                    } else
-                        taskFile[taskFile.length - 1].tasks.push(task);
+                        default:
+                            newConfiguration.tasks.push(task);
+                            break;
+                    }
                 }
-            })
-            ;
+            });
 
             return taskFile;
         })
         .then((taskFile) => {
-            console.log(JSON.stringify(taskFile, null, 4));
+            log.Trace(JSON.stringify(taskFile, null, 4));
 
             // If the taskFile only contains one entry, process it as the configuration
             if (taskFile.length == 1)
@@ -143,7 +160,8 @@ function processArchive(evtData, context, preprocessedConfiguration) {
 }
 
 function writeRemainingTasks(taskFile, evtData) {
-    console.log(JSON.stringify(evtData));
+    log.Debug(`Writing remaining tasks to file for next run of this service`);
+    log.Trace(JSON.stringify(evtData));
 
     let saveConfiguration = new (function() {
         this.originalSource = evtData;
@@ -180,6 +198,14 @@ function processConfiguration(taskFile, awsRegion, awsAccountId) {
     return runTasks(configuration);
 }
 
+function duplicateLambdaTask(task) {
+    let lambdaTask = new filePack(task);
+
+    lambdaTask.functions = [];
+
+    return lambdaTask;
+}
+
 function duplicateTask(task) {
     return createFilePack(task);
 }
@@ -197,7 +223,21 @@ function createFilePack(configuration) {
     })();
 }
 
+function filePack(configuration) {
+    for (let prop in configuration)
+        switch (prop) {
+            case `tasks`:
+                this.tasks = [];
+                break;
+
+            default:
+                this[prop] = configuration[prop];
+        }
+}
+
 function cleanRoot() {
+    log.Trace(`Checking ${localRoot} for any prior runs of this instance with remaining data`);
+
     return new Promise((resolve, reject) => {
         fs.stat(localRoot, (err, stats) => {
             if (!!err && (err.message.search(/no such file or directory/g) >= 0))
@@ -212,6 +252,8 @@ function cleanRoot() {
         if (!stats)
             return null;
         else {
+            log.Trace(`Cleaning ${localRoot} of found data`);
+
             // Delete the existing directory
             return new Promise((resolve, reject) => {
                 fs.remove(localRoot, (err) => {
@@ -232,6 +274,8 @@ function loadSource(evtData) {
 }
 
 function extractFiles(s3Description) {
+    log.Trace(`Extracting source`);
+
     return new Promise((resolve, reject) => {
         // Get the file
         let s3 = new aws.S3({ apiVersion: '2006-03-01' });
@@ -240,11 +284,12 @@ function extractFiles(s3Description) {
             // Tarballs
             let extract = tar.Extract({ path: extractionLocation })
                 .on("error", function(err) {
-                    console.log(err);
+                    log.Error(err);
                     reject(err);
                 })
                 .on("end", function() {
-                    console.log("Extract Complete");
+                    log.Trace("...extract complete");
+
                     resolve();
                 });
 
