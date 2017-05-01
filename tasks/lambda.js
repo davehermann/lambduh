@@ -443,7 +443,20 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
                     });
                 }
             });
-        });
+        })
+        .then(() => {
+            // Clean up the function directory
+            console.log(`Clear files from: `, codeLocation);
+            return new Promise((resolve, reject) => {
+                fs.remove(codeLocation, (err) => {
+                    if (!!err)
+                        reject(err);
+                    else
+                        resolve();
+                });
+            });
+        })
+        ;
 }
 
 function functionConfiguration(functionName) {
