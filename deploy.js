@@ -96,7 +96,7 @@ function processArchive(evtData, context, preprocessedConfiguration) {
             return loadConfiguration(preprocessedConfiguration);
         })
         .then((configuration) => {
-            return splitProcessingAcrossSeveralInstances(configuration);
+            return splitProcessingAcrossSeveralInstances(configuration, !!preprocessedConfiguration);
         })
         .then((taskFile) => {
             global.log.Trace(JSON.stringify(taskFile, null, 4));
@@ -119,55 +119,97 @@ function processArchive(evtData, context, preprocessedConfiguration) {
         ;
 }
 
-function splitProcessingAcrossSeveralInstances(configuration) {
-    // Each task should be run as its own separate configuration file
-    // Some tasks should be broken down into separate steps
-    // This will prevent running out of memory or time on the Lambda instance
+function resortTasksByType(configuration) {
+    // First, sort tasks to move Lambda tasks to the front, followed by API Gateway, and then all S3 tasks
+    // Maintain existing order, other than those changes
 
-    let taskFile = [], newConfiguration = null;
+    // Add an ordinal property
+    configuration.tasks.forEach((task, idx) => { task.initialTaskOrder = idx; });
 
-    // Pre-check to see if there are less Lambda functions than the split-processing threshold
-    let lambdaTasks = configuration.tasks.filter((task) => { return (task.type == "Lambda") && (task.functions.length > THRESHOLDLAMBDABUILDSFORMULTIPLEFILES); });
+    // Sort by task type
+    configuration.tasks.sort((a, b) => {
+        if (a.type === b.type)
+            return a.initialTaskOrder - b.initialTaskOrder;
+        else {
+            switch (a.type) {
+                // S3 always goes at the end
+                case "S3":
+                    return 1;
+                    break;
 
-    if (lambdaTasks.length == 0)
-        // Pass through the entire configuration as-is
-        taskFile = [configuration];
-    else
-        configuration.tasks.forEach((task) => {
-            if (!task.disabled) {
-                // Each task will, by default, be its own separately processed configuration
-                newConfiguration = new filePack(configuration);
-                taskFile.push(newConfiguration);
+                // Lambda always goes at the beginning
+                case "Lambda":
+                    return -1;
+                    break;
 
-                switch (task.type) {
-                    // Lambda will split all functions into separate configurations of MAXLAMBDABUILDSPERFILE
-                    case "Lambda":
-                        // Create a copy of the array of functions
-                        let definedFunctions = task.functions.filter(() => { return true; });
-
-                        let lambdaTask = duplicateLambdaTask(task);
-                        newConfiguration.tasks.push(lambdaTask);
-
-                        while (definedFunctions.length > 0) {
-                            if (lambdaTask.functions.length >= MAXLAMBDABUILDSPERFILE) {
-                                newConfiguration = new filePack(configuration);
-                                taskFile.push(newConfiguration);
-
-                                lambdaTask = duplicateLambdaTask(task);
-                                newConfiguration.tasks.push(lambdaTask);
-                            }
-
-                            let thisFunction = definedFunctions.shift();
-                            lambdaTask.functions.push(thisFunction);
-                        }
-                        break;
-
-                    default:
-                        newConfiguration.tasks.push(task);
-                        break;
-                }
+                // API Gateway should be after Lambda and before S3
+                case "ApiGateway":
+                    return b.type === "Lambda" ? 1 : -1;
+                    break;
             }
-        });
+        }
+    });
+
+    // Remove the ordinal property
+    configuration.tasks.forEach((task) => { delete task.initialTaskOrder; });
+}
+
+function splitProcessingAcrossSeveralInstances(configuration, hasBeenProcessed) {
+    let taskFile = [];
+
+    if (!hasBeenProcessed) {
+        resortTasksByType(configuration);
+
+        // Each task should be run as its own separate configuration file
+        // Some tasks should be broken down into separate steps
+        // This will prevent running out of memory or time on the Lambda instance
+
+        let newConfiguration = null;
+
+        // Pre-check to see if there are less Lambda functions than the split-processing threshold
+        let lambdaTasks = configuration.tasks.filter((task) => { return (task.type == "Lambda") && (task.functions.length > THRESHOLDLAMBDABUILDSFORMULTIPLEFILES); });
+
+        if (lambdaTasks.length == 0)
+            // Pass through the entire configuration as-is
+            taskFile = [configuration];
+        else
+            configuration.tasks.forEach((task) => {
+                if (!task.disabled) {
+                    // Each task will, by default, be its own separately processed configuration
+                    newConfiguration = new filePack(configuration);
+                    taskFile.push(newConfiguration);
+
+                    switch (task.type) {
+                        // Lambda will split all functions into separate configurations of MAXLAMBDABUILDSPERFILE
+                        case "Lambda":
+                            // Create a copy of the array of functions
+                            let definedFunctions = task.functions.filter(() => { return true; });
+
+                            let lambdaTask = duplicateLambdaTask(task);
+                            newConfiguration.tasks.push(lambdaTask);
+
+                            while (definedFunctions.length > 0) {
+                                if (lambdaTask.functions.length >= MAXLAMBDABUILDSPERFILE) {
+                                    newConfiguration = new filePack(configuration);
+                                    taskFile.push(newConfiguration);
+
+                                    lambdaTask = duplicateLambdaTask(task);
+                                    newConfiguration.tasks.push(lambdaTask);
+                                }
+
+                                let thisFunction = definedFunctions.shift();
+                                lambdaTask.functions.push(thisFunction);
+                            }
+                            break;
+
+                        default:
+                            newConfiguration.tasks.push(task);
+                            break;
+                    }
+                }
+            });
+    } else
+        taskFile = [configuration];
 
     return taskFile;
 }
