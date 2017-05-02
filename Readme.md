@@ -233,6 +233,21 @@ JSON configuration and detailed description:
             + *Suffix*: `tar.gz`
             + **Recommend:** *Prefix* of your key path if you use one
 
+## Logging
+By default, all logging is written to Cloudwatch Logs using a *Trace* level.
+This is to assist with initial problems.  
+**Strong recommendation:** set to *Warn* for production usage once you're in a deployment groove.
+
+Possible levels:
++ Trace
++ Debug
++ Info
++ Warn
++ Error
+
+An environment variable named **log** can be set with the name of the log level.
+
+
 ## License
 
 This is licensed under the GPLv3.

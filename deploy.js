@@ -12,7 +12,8 @@ let aws = require("aws-sdk"),
     path = require("path"),
     log = require("./logger");
 
-log.level = "trace";
+log.level = process.env.log || "trace";
+global.log = log;
 
 let localRoot = "/tmp/deployment",
     extractionLocation = localRoot + "/extract";
@@ -20,14 +21,14 @@ let localRoot = "/tmp/deployment",
 const MAXLAMBDABUILDSPERFILE = 10;
 
 module.exports.lambda = function(evtData, context, callback) {
-    log.Trace(JSON.stringify(evtData));
+    global.log.Trace(JSON.stringify(evtData));
 
     launchedBy(evtData, context)
         .then(() => {
             callback();
         })
         .catch((err) => {
-            log.Error(err);
+            global.log.Error(err);
 
             callback(err);
         });
@@ -53,7 +54,7 @@ function continueArchive(evtData, context) {
     let s3Source = evtData.Records[0].s3,
         fileName = path.basename(s3Source.object.key);
 
-    log.Info(`Continuing processing with "${s3Source.object.key} in ${s3Source.bucket.name}"`);
+    global.log.Info(`Continuing processing with "${s3Source.object.key} in ${s3Source.bucket.name}"`);
 
     let s3 = new aws.S3({ apiVersion: '2006-03-01' });
     return new Promise((resolve, reject) => {
@@ -63,7 +64,7 @@ function continueArchive(evtData, context) {
             else {
                 // The body should be JSON
                 let storedConfig = data.Body.toString(`utf8`);
-                log.Trace(storedConfig);
+                global.log.Trace(storedConfig);
                 resolve(JSON.parse(storedConfig));
             }
         });
@@ -82,7 +83,7 @@ function processArchive(evtData, context, preprocessedConfiguration) {
             awsRegion = arnParts[3];
             awsAccountId = arnParts[4];
 
-            log.Debug(`Running in ${awsRegion} for account id ${awsAccountId}`);
+            global.log.Debug(`Running in ${awsRegion} for account id ${awsAccountId}`);
         })
         .then(() => {
             return cleanRoot();
@@ -139,7 +140,7 @@ function processArchive(evtData, context, preprocessedConfiguration) {
             return taskFile;
         })
         .then((taskFile) => {
-            log.Trace(JSON.stringify(taskFile, null, 4));
+            global.log.Trace(JSON.stringify(taskFile, null, 4));
 
             // If the taskFile only contains one entry, process it as the configuration
             if (taskFile.length == 1)
@@ -160,8 +161,8 @@ function processArchive(evtData, context, preprocessedConfiguration) {
 }
 
 function writeRemainingTasks(taskFile, evtData) {
-    log.Debug(`Writing remaining tasks to file for next run of this service`);
-    log.Trace(JSON.stringify(evtData));
+    global.log.Debug(`Writing remaining tasks to file for next run of this service`);
+    global.log.Trace(JSON.stringify(evtData));
 
     let saveConfiguration = new (function() {
         this.originalSource = evtData;
@@ -236,7 +237,7 @@ function filePack(configuration) {
 }
 
 function cleanRoot() {
-    log.Trace(`Checking ${localRoot} for any prior runs of this instance with remaining data`);
+    global.log.Trace(`Checking ${localRoot} for any prior runs of this instance with remaining data`);
 
     return new Promise((resolve, reject) => {
         fs.stat(localRoot, (err, stats) => {
@@ -252,7 +253,7 @@ function cleanRoot() {
         if (!stats)
             return null;
         else {
-            log.Trace(`Cleaning ${localRoot} of found data`);
+            global.log.Trace(`Cleaning ${localRoot} of found data`);
 
             // Delete the existing directory
             return new Promise((resolve, reject) => {
@@ -274,7 +275,7 @@ function loadSource(evtData) {
 }
 
 function extractFiles(s3Description) {
-    log.Trace(`Extracting source`);
+    global.log.Trace(`Extracting source`);
 
     return new Promise((resolve, reject) => {
         // Get the file
@@ -284,11 +285,11 @@ function extractFiles(s3Description) {
             // Tarballs
             let extract = tar.Extract({ path: extractionLocation })
                 .on("error", function(err) {
-                    log.Error(err);
+                    global.log.Error(err);
                     reject(err);
                 })
                 .on("end", function() {
-                    log.Trace("...extract complete");
+                    global.log.Trace("...extract complete");
 
                     resolve();
                 });

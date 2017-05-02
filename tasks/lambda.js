@@ -20,8 +20,8 @@ function lambdaTask(task, extractionLocation, localRoot, configuration) {
             return deploySequentially(task.functions.filter(() => { return true; }), existingFunctions, task, configuration, extractionLocation, localRoot);
         })
         .catch((err) => {
-            console.log("Function deployment error");
-            console.log(err);
+            global.log.Error("Function deployment error");
+            global.log.Error(err);
 
             throw err;
         })
@@ -42,11 +42,11 @@ function deploySequentially(functionList, existingFunctions, task, configuration
 }
 
 function allExistingFunctions() {
-    console.log(`Loading Lambda function list`);
+    global.log.Info(`Loading Lambda function list`);
 
     return listLambdaFunctions(null)
         .then((fData) => {
-            console.log(fData);
+            global.log.Debug(JSON.stringify(fData));
 
             return fData;
         });
@@ -91,17 +91,17 @@ function npmInstall(extractionLocation, localRoot, task) {
                 });
             })
                 .then((npmrc) => {
-                    console.log(`npmrc template:`, npmrc);
+                    global.log.Debug(`npmrc template:`, npmrc);
                     return npmrc
                         .replace(/\%EXTRACTIONLOCATION\%/g, extractionLocation)
                         .replace(/\%LOCALROOT\%/g, localRoot)
                         ;
                 })
                 .then((npmrc) => {
-                    console.log(`npmrc:`, npmrc);
+                    global.log.Debug(`npmrc:`, npmrc);
 
                     return new Promise((resolve, reject) => {
-                        console.log(`Writing to ${extractionLocation}/.npmrc`);
+                        global.log.Debug(`Writing to ${extractionLocation}/.npmrc`);
 
                         fs.writeFile(`${extractionLocation}/.npmrc`, npmrc, { encoding: `utf8`, mode: 0o600 }, (err) => {
                             if (!!err)
@@ -118,7 +118,7 @@ function npmInstall(extractionLocation, localRoot, task) {
                 fs.mkdirsSync(`${localRoot}/npmConfig/cache`);
                 fs.mkdirsSync(`${localRoot}/home`);
 
-                console.log(`Run NPM Install in ${extractionLocation}`);
+                global.log.Info(`Run NPM Install in ${extractionLocation}`);
 
                 // let npm = spawn("npm", ["install", "--production", "--prefix", extractionLocation, "--userconfig", `${localRoot}/npmConfig`, "--cache", `${localRoot}/npmConfig/cache`], { cwd: extractionLocation }),
                 let npm = spawn(`env`, [`HOME=${localRoot}/home`, "npm", "install", "--production"], { cwd: extractionLocation }),
@@ -132,7 +132,7 @@ function npmInstall(extractionLocation, localRoot, task) {
                     errDetails += data;
                 });
                 npm.on("error", (err) => {
-                    console.log(`ERROR:`, err);
+                    global.log.Error(`ERROR:`, err);
                     reject(err);
                 });
                 npm.on("close", (exitCode) => {
@@ -153,8 +153,8 @@ function npmInstall(extractionLocation, localRoot, task) {
                         reject(errDetails);
                     } else {
                         if (errDetails.length > 0)
-                            console.log("Warnings: ", errDetails);
-                        console.log("Install: ", runDetails);
+                            global.log.Warn("Warnings: ", errDetails);
+                        global.log.Debug("Install: ", runDetails);
                         resolve();
                     }
                 });
@@ -170,10 +170,11 @@ function setPackageJson(extractionLocation, task) {
             // Copy the alternate package.json to package.json
             fs.copy(path.normalize(`${extractionLocation}/${task.alternatePackageJson}`), path.normalize(`${extractionLocation}/package.json`), { clobber: true }, (err) => {
                 if (!!err) {
-                    console.log(err);
+                    global.log.Error(`Error copying alternative package.json`);
+                    global.log.Error(err);
                     reject(err);
                 } else {
-                    console.log(`Replaced /package.json with /${task.alternatePackageJson}`)
+                    global.log.Info(`Replaced /package.json with /${task.alternatePackageJson}`);
                     resolve();
                 }
             });
@@ -194,7 +195,7 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
         // If a node_modules exists in the function path, use the node_modules
         if (files.indexOf(`node_modules`) >= 0) {
             return new Promise((resolve, reject) => {
-                console.log(`Moving node_modules from ${path.normalize(`${extractionLocation}${path.dirname(filePath)}`)} to ${path.normalize(codeLocation)}`);
+                global.log.Info(`Moving node_modules from ${path.normalize(`${extractionLocation}${path.dirname(filePath)}`)} to ${path.normalize(codeLocation)}`);
 
                 fs.move(path.normalize(`${extractionLocation}${path.dirname(filePath)}/node_modules`), path.normalize(`${codeLocation}/node_modules`), (err) => {
                     if (!!err)
@@ -248,6 +249,8 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
 }
 
 function addFilesToZip(directoryToScan, functionName) {
+    global.log.Info(`Generate Zip of Lambda function`);
+
     // Zip the entire function directory
     let zip = new jsZip();
 
@@ -286,7 +289,7 @@ function addFilesToZip(directoryToScan, functionName) {
             zip.file(fullPath, fs.readFileSync(`${fsObject.path}`));
         });
 
-        console.log(`In Code Zip File:\n`, entryList);
+        global.log.Trace(`In Code Zip File:\n`, entryList);
 
         return zip;
     });
@@ -301,7 +304,7 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
 
         fs.stat(destination, (err, stats) => {
             if (!!err || !stats) {
-                console.log(`${destination} does not exist. Copying from ${source}`);
+                global.log.Trace(`${destination} does not exist. Copying from ${source}`);
 
                 // // Create the directory
                 // fs.mkdirsSync(`${codeLocation}${path.dirname(filePath)}`);
@@ -313,7 +316,7 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
                         resolve(true);
                 });
             } else {
-                console.log(`Skipping ${source} as ${destination} exists`);
+                global.log.Trace(`Skipping ${source} as ${destination} exists`);
                 resolve(false);
             }
         });
@@ -324,7 +327,7 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
             let sourceFile = fs.readFileSync(`${codeLocation}${filePath}`, "utf8");
 
             let foundRequires = sourceFile.match(/require\(\".+\"\)/g);
-            console.log("Requires: ", foundRequires);
+            global.log.Debug("Requires: ", foundRequires);
             let loadRequires = [];
 
             if (!!foundRequires)
@@ -333,7 +336,7 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
                     if (RegExp.$1.substr(0, 1) == ".")
                         loadRequires.push(RegExp.$1);
                 });
-            console.log("Load: ", loadRequires);
+            global.log.Trace("Load: ", loadRequires);
 
             return loadRequires;
         } else
@@ -359,7 +362,8 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
 }
 
 function deployFunction(functionDefinition, existingFunctions, task, configuration, extractionLocation, localRoot) {
-    console.log(functionDefinition);
+    global.log.Info(functionDefinition);
+
     let functionName = `ld_${!!configuration.applicationName ? configuration.applicationName + "_" : ""}${functionDefinition.name}`;
 
     let functionExists = existingFunctions.Functions.some((item) => { return item.FunctionName.toLowerCase() == functionName.toLowerCase() });
@@ -368,6 +372,7 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
 
     return copyNodeModules(extractionLocation, codeLocation, functionDefinition.source, localRoot)
         .then(() => {
+            global.log.Debug(`Walk/Copy requires`);
             return copyRequiredFile(codeLocation, extractionLocation, functionDefinition.source);
         })
         .then(() => {
@@ -399,14 +404,14 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
                 })();
 
                 if (!functionExists) {
-                    console.log("Creating Lambda Function: ", functionConfiguration);
+                    global.log.Info("Creating Lambda Function: ", functionConfiguration);
                     functionConfiguration.Code = { ZipFile: zipBuffer };
 
                     lambda.createFunction(functionConfiguration, (err, data) => {
                         if (!!err)
                             reject(err);
                         else {
-                            console.log("Function Created: ", data);
+                            global.log.Debug("Function Created: ", data);
                             resolve();
                         }
                     });
@@ -418,24 +423,24 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
                         SecurityGroupIds: []
                     }
 
-                    console.log("Update Lambda Function: ", functionConfiguration);
+                    global.log.Info("Update Existing Lambda Function Configuration: ", functionConfiguration);
                     lambda.updateFunctionConfiguration(functionConfiguration, (err, data) => {
                         if (!!err) {
-                            console.log("Configuration Update Error: ", err);
+                            global.log.Error("Configuration Update Error: ", err);
                             reject(err);
                         } else {
-                            console.log("Function Configuration Updated: ", data);
+                            global.log.Debug("Function Configuration Updated: ", data);
 
                             let codeUpdate = new (function() {
                                 this.FunctionName = functionName;
                                 this.ZipFile = zipBuffer;
                             })();
-                            console.log("Updating code");
+                            global.log.Info("Pushing Updated Code");
                             lambda.updateFunctionCode(codeUpdate, (err, data) => {
                                 if (!!err)
                                     reject(err);
                                 else {
-                                    console.log("Function Code Updated: ", data);
+                                    global.log.Debug("Function Code Updated: ", data);
                                     resolve();
                                 }
                             });
@@ -446,7 +451,7 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
         })
         .then(() => {
             // Clean up the function directory
-            console.log(`Clear files from: `, codeLocation);
+            global.log.Debug(`Clear files from: `, codeLocation);
             return new Promise((resolve, reject) => {
                 fs.remove(codeLocation, (err) => {
                     if (!!err)
@@ -465,7 +470,7 @@ function functionConfiguration(functionName) {
             if (!!err)
                 reject(err);
             else {
-                console.log("Configuration: ", data);
+                global.log.Trace("Function Configuration: ", data);
                 resolve(data);
             }
         });
@@ -479,10 +484,10 @@ function removePermissions(permissionList) {
         return new Promise((resolve, reject) => {
             lambda.removePermission({ FunctionName: permissionToDrop.Resource, StatementId: permissionToDrop.Sid }, (err, data) => {
                 if (!!err) {
-                    console.log(`Error dropping`, permissionToDrop.Sid, `: `, err);
+                    global.log.Error(`Error dropping`, permissionToDrop.Sid, `: `, err);
                     reject(err);
                 } else {
-                    console.log(`Dropped`, permissionToDrop.Sid);
+                    global.log.Debug(`Dropped ${permissionToDrop.Sid}`);
                     resolve();
                 }
             });
@@ -504,16 +509,17 @@ function clearPermissions(newPermission) {
         })();
         lambda.getPolicy(findPolicy, (err, data) => {
             if (!!err) {
-                console.log(err);
+                global.log.Error(err);
 
                 // In the case of no policy previously existing, continue without attempting deletion
                 if (err.code == `ResourceNotFoundException`) {
-                    console.log(`Skipping removal of existing permissions as no policy object exists`);
+                    global.log.Error(`Skipping removal of existing permissions as no policy object exists`);
                     resolve(null);
                 } else
                     reject(err);
             } else {
-                console.log(`Existing Policy: `, data);
+                global.log.Info(`Existing Policy Found -- Needs Removal`);
+                global.log.Trace(data);
                 resolve(data);
             }
         });
@@ -523,7 +529,7 @@ function clearPermissions(newPermission) {
                 // Find any policy statements that have the same FunctionName, Principal and SourceArn
                 let attachedPolicies = JSON.parse(existingPolicy.Policy).Statement,
                     matchingPolicies = [];
-                console.log(`${attachedPolicies.length} attached to policy`);
+                global.log.Debug(`${attachedPolicies.length} attached to policy`);
 
                 attachedPolicies.forEach((policy) => {
                     if (
@@ -533,7 +539,7 @@ function clearPermissions(newPermission) {
                     )
                         matchingPolicies.push(policy);
                 });
-                console.log(`${matchingPolicies.length} matching will be removed`);
+                global.log.Debug(`${matchingPolicies.length} matching will be removed`);
 
                 return matchingPolicies;
             } else
@@ -554,16 +560,19 @@ function addEventInvocationPermission(functionArn, sourceArn, sourcePrincipal) {
         this.Principal = sourcePrincipal;
         this.SourceArn = sourceArn;
     })();
-    console.log("Add Lambda Permission: ", newPermission);
+    global.log.Info(`Add Lambda Permission`);
+    global.log.Trace(newPermission);
+
     return clearPermissions(newPermission)
         .then(() => {
             return new Promise((resolve, reject) => {
                 lambda.addPermission(newPermission, (err, data) => {
                     if (!!err) {
-                        console.log(err);
+                        global.log.Error(err);
                         reject(err);
                     } else {
-                        console.log("Lambda Permission Added: ", data);
+                        global.log.Debug(`Lambda Permission Added`);
+                        global.log.Trace(data);
                         resolve(data);
                     }
                 });
@@ -576,10 +585,12 @@ function createVersion(functionArn) {
     return new Promise((resolve, reject) => {
         lambda.publishVersion({ FunctionName: functionArn }, (err, data) => {
             if (!!err) {
-                console.log("Function Versioning Error: ", err);
+                global.log.Error(`Function Versioning Error`, err);
                 reject(err);
             } else {
-                console.log("Function Version Created: ", data);
+                global.log.Info(`Function Version Created`);
+                global.log.Trace(data);
+
                 resolve(data);
             }
         });
@@ -590,10 +601,10 @@ function getAliases(functionArn) {
     return new Promise((resolve, reject) => {
         lambda.listAliases({ FunctionName: functionArn }, (err, data) => {
             if (!!err) {
-                console.log("Function Aliases Error: ", err);
+                global.log.Error(`Function Aliases Error`, err);
                 reject(err);
             } else {
-                console.log(`Found Aliases for ${functionArn}`, data);
+                global.log.Trace(`Found Aliases for ${functionArn}`, data);
                 resolve(data);
             }
         });
@@ -610,10 +621,11 @@ function createOrUpdateAlias(functionVersionDetail, aliasName, isUpdate) {
 
         let fUpd = function(err, data) {
             if (!!err) {
-                console.log("Lambda Alias Error: ", err);
+                global.log.Error(`Lambda Alias Error`, err);
                 reject(err);
             } else {
-                console.log(`Alias ${isUpdate ? "Updated" : "Created"}: `, data);
+                global.log.Debug(`Alias ${isUpdate ? "Updated" : "Created"}: `);
+                global.log.Trace(data);
                 resolve(data);
             }
         }
@@ -633,10 +645,11 @@ function getAllFunctionVersions(functionArn) {
     return new Promise((resolve, reject) => {
         lambda.listVersionsByFunction({ FunctionName: functionArn }, (err, data) => {
             if (!!err) {
-                console.log("Function Version Listing Error: ", err);
+                global.log.Error(`Function Version Listing Error`, err);
                 reject(err);
             } else {
-                console.log("All Versions of ", functionArn, ": ", data);
+                global.log.Debug("All Versions of ", functionArn, ": ");
+                global.log.Trace(data);
                 resolve(data);
             }
         });
@@ -645,13 +658,14 @@ function getAllFunctionVersions(functionArn) {
 
 function deleteVersion(versionArn, versionNumber) {
     return new Promise((resolve, reject) => {
-        console.log("Function ", versionArn, " removing version: ", versionNumber);
+        global.log.Info(`Function "${versionArn}" now removing version ${versionNumber}`);
         lambda.deleteFunction({ FunctionName: versionArn, Qualifier: versionNumber }, (err, data) => {
             if (!!err) {
-                console.log("Version removal error: ", err);
+                global.log.Error(`Version removal error`, err);
                 reject(err);
             } else {
-                console.log(`Version ${versionNumber} removed: `, data);
+                global.log.Debug(`Version ${versionNumber} removed`);
+                global.log.Trace(data);
                 resolve(data);
             }
         });

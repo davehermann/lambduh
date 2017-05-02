@@ -61,7 +61,7 @@ function handleFile(rootPath, filePath, task, sourceKeys) {
 
     sourceKeys.push(relativePath);
 
-    // console.log(`${filePath} is a file going to ${relativePath} in ${task.dest.bucket}`);
+    global.log.Trace(`${filePath} is a file going to ${relativePath} in ${task.dest.bucket}`);
 
     return new Promise((resolve, reject) => {
         let s3 = new aws.S3({ apiVersion: '2006-03-01' });
@@ -99,7 +99,7 @@ function handleFile(rootPath, filePath, task, sourceKeys) {
 }
 
 function handleDirectory(rootPath, directoryPath, task, sourceKeys) {
-    // console.log(`${directoryPath} is a directory`);
+    global.log.Trace(`${directoryPath} is a directory`);
 
     return readDirectory(directoryPath, rootPath, task, sourceKeys);
     // return null;
@@ -112,7 +112,7 @@ function cleanUnusedFiles(sourceKeys, task) {
         if (!!task.dest.key)
             keyList.Prefix = task.dest.key;
 
-        console.log(`Cleaning removed items from ${JSON.stringify(keyList)}`);
+        global.log.Info(`Cleaning removed items from ${JSON.stringify(keyList)}`);
 
         let s3 = new aws.S3({ apiVersion: '2006-03-01' });
 

@@ -15,46 +15,66 @@ class logger {
         this.level = "debug";
     }
 
-    _logResponse(level, details) {
+    _logResponse(level, dataToDisplay) {
         if (level >= _level.get(this))
-            console.log(details);
+            dataToDisplay.forEach((details) => { console.log(details); });
     }
 
     set level(val) {
         // Convert string to property
-        let minLevel = (typeof val === "string") ? _levels[val] : val;
+        let minLevel = (typeof val === "string") ? _levels[val].toLowerCase() : val;
 
         _level.set(this, minLevel);
     }
 
-    Trace (err) {
+    Trace () {
         let self = this;
 
-        self._logResponse(10, err);
+        let dataDisplay = [];
+        for (let idx = 0, total = arguments.length; idx < total; idx++)
+            dataDisplay.push(arguments[idx]);
+
+        self._logResponse(10, dataDisplay);
     }
 
-    Debug (err) {
+    Debug () {
         let self = this;
 
-        self._logResponse(20, err);
+        let dataDisplay = [];
+        for (let idx = 0, total = arguments.length; idx < total; idx++)
+            dataDisplay.push(arguments[idx]);
+
+        self._logResponse(20, dataDisplay);
     }
 
-    Info (err) {
+    Info () {
         let self = this;
 
-        self._logResponse(30, err);
+        let dataDisplay = [];
+        for (let idx = 0, total = arguments.length; idx < total; idx++)
+            dataDisplay.push(arguments[idx]);
+
+        self._logResponse(30, dataDisplay);
     }
 
-    Warn(err) {
+    Warn() {
         let self = this;
 
-        self._logResponse(40, err);
+        let dataDisplay = [];
+        for (let idx = 0, total = arguments.length; idx < total; idx++)
+            dataDisplay.push(arguments[idx]);
+
+        self._logResponse(40, dataDisplay);
     }
 
-    Error(err) {
+    Error() {
         let self = this;
 
-        self._logResponse(50, err);
+        let dataDisplay = [];
+        for (let idx = 0, total = arguments.length; idx < total; idx++)
+            dataDisplay.push(arguments[idx]);
+
+        self._logResponse(50, dataDisplay);
     }
 }
 

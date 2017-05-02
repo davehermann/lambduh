@@ -37,13 +37,14 @@ function deleteMethodFromResource(httpMethod, resource, apiId) {
                 this.resourceId = resource.id;
                 this.httpMethod = httpMethod.toUpperCase();
             })();
-            console.log("Deleting Method: ", removeMethod);
+            global.log.Info(`Deleting Method`, removeMethod);
             apiGateway.deleteMethod(removeMethod, (err, data) => {
                 if (!!err) {
-                    console.log("Method Delete Error: ", err);
+                    global.log.Error(`Method Delete Error`, err);
                     reject(err);
                 } else {
-                    console.log("Deleted: ", data);
+                    global.log.Debug(`Deleted`)
+                    global.log.Trace(data);
                     resolve(data);
                 }
             });
@@ -75,13 +76,14 @@ function addMethodToResource(httpMethod, resource, apiId, headers, parameters) {
                         });
                 })();
         })();
-        console.log("Add Method: ", newMethod);
+        global.log.Info(`Add Method`, newMethod);
         apiGateway.putMethod(newMethod, (err, data) => {
             if (!!err) {
-                console.log("Add Method Error: ", err);
+                global.log.Error(`Add Method Error`, err);
                 reject(err);
             } else {
-                console.log("Method Created: ", data);
+                global.log.Debug(`Method Created`);
+                global.log.Trace(data);
                 resolve(data);
             }
         });
@@ -90,13 +92,16 @@ function addMethodToResource(httpMethod, resource, apiId, headers, parameters) {
 
 function addIntegrationRequest(integrationParameters) {
     return new Promise((resolve, reject) => {
-        console.log("Add integration: ", integrationParameters);
+        global.log.Info(`Add integration`);
+        global.log.Trace(integrationParameters);
+
         apiGateway.putIntegration(integrationParameters, (err, data) => {
             if (!!err) {
-                console.log(err);
+                global.log.Error(err);
                 reject(err);
             } else {
-                console.log("Integration Added: ", data);
+                global.log.Debug(`Integration Added`);
+                global.log.Trace(data);
                 resolve(data);
             }
         });
@@ -277,13 +282,15 @@ function addIntegrationResponse(method, resource, apiId, headers) {
                 })();
         })();
 
-        console.log("Add Integration Response: ", newResponse);
+        global.log.Info(`Add Integration Response`);
+        global.log.Trace(newResponse);
         apiGateway.putIntegrationResponse(newResponse, (err, data) => {
             if (!!err) {
-                console.log("Integration Response Error: ", err);
+                global.log.Error(`Integration Response Error`, err);
                 reject(err);
             } else {
-                console.log("Integration Response Created: ", data);
+                global.log.Debug(`Integration Response Created`);
+                global.log.Trace(data);
                 resolve(data);
             }
         });
@@ -302,14 +309,16 @@ function deleteMethodResponses(resource, method, apiId) {
                 this.httpMethod = method.httpMethod;
                 this.statusCode = "200";
             })();
-            console.log("Delete Method Response: ", removeResponse);
+            global.log.Info(`Delete Method Response`);
+            global.log.Trace(removeResponse);
 
             apiGateway.deleteMethodResponse(removeResponse, (err, data) => {
                 if (!!err) {
-                    console.log("Method Response Delete Error: ", err);
+                    global.log.Error(`Method Response Delete Error`, err);
                     reject(err);
                 } else {
-                    console.log("Method Response Deleted: ", data);
+                    global.log.Debug(`Method Response Deleted`);
+                    global.log.Trace(data);
                     resolve();
                 }
             });
@@ -339,13 +348,15 @@ function addMethodResponse(resource, method, apiId, headers) {
                             });
                         })();
                 })();
-                console.log("Add Method Response: ", newResponse);
+                global.log.Info(`Add Method Response`);
+                global.log.Trace(newResponse);
                 apiGateway.putMethodResponse(newResponse, (err, data) => {
                     if (!!err) {
-                        console.log("Method Response Add Error: ", err);
+                        global.log.Error(`Method Response Add Error`, err);
                         reject(err);
                     } else {
-                        console.log("Method Response Created: ", data);
+                        global.log.Debug(`Method Response Created`);
+                        global.log.Trace(data);
                         resolve(data);
                     }
                 });
@@ -359,15 +370,17 @@ function createDeployment(stageName, apiId) {
         this.stageName = stageName;
     })();
 
-    console.log("Create Deployment: ", newDeployment);
+    global.log.Info(`Create Deployment`);
+    global.log.Trace(newDeployment);
 
     return new Promise((resolve, reject) => {
         apiGateway.createDeployment(newDeployment, (err, data) => {
             if (!!err) {
-                console.log("Deployment Creation Error: ", err);
+                global.log.Error(`Deployment Creation Error`, err);
                 reject(err);
             } else {
-                console.log("API Gateway Deployed: ", data);
+                global.log.Info(`API Gateway Deployed`);
+                global.log.Trace(data);
                 resolve(data);
             }
         });

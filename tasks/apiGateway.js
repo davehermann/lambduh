@@ -16,6 +16,8 @@ function apiGatewayTask(task, configuration) {
             return applicationApi(existingApis, configuration);
         })
         .then((apiId) => {
+            global.log.Trace(`Using API ID: ${apiId}`);
+
             return existingApiResources(apiId);
         })
         .then((api) => {
@@ -43,7 +45,9 @@ function allExistingApis() {
             if (!!err)
                 reject(err);
             else {
-                console.log("Found APIs: ", data);
+                global.log.Info(`Found ${data.items.length} APIs`);
+                global.log.Debug(data);
+
                 resolve(data);
             }
         })
@@ -77,7 +81,7 @@ function existingApiResources(apiId, position) {
             if (!!err)
                 reject(err);
             else {
-                console.log("API Resources: ", JSON.stringify(data, null, 4));
+                global.log.Trace("API Resources: ", JSON.stringify(data));
 
                 if (!!data.position) {
                     let foundResources = data.items;
@@ -150,7 +154,7 @@ function processEndpoints(remainingEndpoints, task, apiId, existingResources, ex
             })
             .then(() => {
                 // Rate limit to keep from running over a TooManyRequests exception
-                console.log(`Waiting 1 second to limit requests to AWS APIs (${remainingEndpoints.length} remaining to process)`);
+                global.log.Info(`Waiting 1 second to limit requests to AWS APIs (${remainingEndpoints.length} remaining to process)`);
 
                 return new Promise((resolve, reject) => {
                     setTimeout(function() {
@@ -172,7 +176,8 @@ function getResource(endpoint, apiId, existingResources) {
             return (endpoint.path.search(new RegExp("^" + item.path, "i")) >= 0);
         });
 
-        console.log("Endpoint: ", endpoint, "Parents: ", foundParents);
+        global.log.Info(`Endpoint`, endpoint);
+        global.log.Info(`Parents`, foundParents);
 
         let lowestParent = null;
         foundParents.forEach((parentItem) => {
@@ -180,15 +185,16 @@ function getResource(endpoint, apiId, existingResources) {
                 lowestParent = parentItem;
         });
 
-        console.log(`Lowest parent:`, lowestParent);
+        global.log.Debug(`Lowest parent`, lowestParent);
 
         let createPath = endpoint.path.replace(new RegExp("^" + lowestParent.path, "i"), "");
         let createParts = createPath.length > 0 ? createPath.split("/") : [];
-        console.log("Path: ", createPath, " to parts: ", createParts);
+        global.log.Trace(`Path`, createPath, `to parts`, createParts);
 
         if ((createParts.length > 0) && (createParts[0].length == 0)) {
             createParts.shift();
-            console.log(`Removed empty path part at [0]`);
+
+            global.log.Debug(`Removed empty path part at [0]`);
         }
 
         // Create each missing part of the path as a new resource
@@ -204,10 +210,10 @@ function getResource(endpoint, apiId, existingResources) {
 
                 apiGateway.createResource(newResource, (err, data) => {
                     if (!!err) {
-                        console.log(err);
+                        global.log.Error(err);
                         reject(err);
                     } else {
-                        console.log("New Resource: ", data);
+                        global.log.Debug(`New Resource Created`, data);
                         existingResources.items.push(data);
                         createPart(data);
                     }
@@ -220,7 +226,7 @@ function getResource(endpoint, apiId, existingResources) {
 }
 
 function addMethod(endpoint, resource, apiId) {
-    console.log("Resource: ", resource);
+    global.log.Trace("Resource: ", resource);
 
     return removeMethod(endpoint, resource, apiId)
         .then(() => {
