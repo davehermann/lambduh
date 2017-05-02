@@ -13,12 +13,13 @@ let aws = require("aws-sdk"),
     log = require("./logger");
 
 log.level = process.env.log || "warn";
+const MAXLAMBDABUILDSPERFILE = process.env.lambdasPerTask || 10;
+const THRESHOLDLAMBDABUILDSFORMULTIPLEFILES = !!process.env.minLambdaForSplit ? +process.env.minLambdaForSplit : 0;
+
 global.log = log;
 
 let localRoot = "/tmp/deployment",
     extractionLocation = localRoot + "/extract";
-
-const MAXLAMBDABUILDSPERFILE = process.env.lambdasPerTask || 10;
 
 module.exports.lambda = function(evtData, context, callback) {
     global.log.Trace(JSON.stringify(evtData));
@@ -95,49 +96,7 @@ function processArchive(evtData, context, preprocessedConfiguration) {
             return loadConfiguration(preprocessedConfiguration);
         })
         .then((configuration) => {
-            // Each task should be run as its own separate configuration file
-            // Some tasks should be broken down into separate steps
-            // This will prevent running out of memory or time on the Lambda instance
-
-            let taskFile = [];
-
-            configuration.tasks.forEach((task) => {
-                if (!task.disabled) {
-                    // Each task will, by default, be its own separately processed configuration
-                    let newConfiguration = new filePack(configuration);
-                    taskFile.push(newConfiguration);
-
-                    switch (task.type) {
-                        // Lambda will split all functions into separate configurations of MAXLAMBDABUILDSPERFILE
-                        case "Lambda":
-                            // Create a copy of the array of functions
-                            let definedFunctions = task.functions.filter(() => { return true; });
-
-                            let lambdaTask = duplicateLambdaTask(task);
-                            newConfiguration.tasks.push(lambdaTask);
-
-                            while (definedFunctions.length > 0) {
-                                if (lambdaTask.functions.length >= MAXLAMBDABUILDSPERFILE) {
-                                    newConfiguration = new filePack(configuration);
-                                    taskFile.push(newConfiguration);
-
-                                    lambdaTask = duplicateLambdaTask(task);
-                                    newConfiguration.tasks.push(lambdaTask);
-                                }
-
-                                let thisFunction = definedFunctions.shift();
-                                lambdaTask.functions.push(thisFunction);
-                            }
-                            break;
-
-                        default:
-                            newConfiguration.tasks.push(task);
-                            break;
-                    }
-                }
-            });
-
-            return taskFile;
+            return splitProcessingAcrossSeveralInstances(configuration);
         })
         .then((taskFile) => {
             global.log.Trace(JSON.stringify(taskFile, null, 4));
@@ -158,6 +117,59 @@ function processArchive(evtData, context, preprocessedConfiguration) {
                 return writeRemainingTasks(taskFile, evtData);
         })
         ;
+}
+
+function splitProcessingAcrossSeveralInstances(configuration) {
+    // Each task should be run as its own separate configuration file
+    // Some tasks should be broken down into separate steps
+    // This will prevent running out of memory or time on the Lambda instance
+
+    let taskFile = [], newConfiguration = null;
+
+    // Pre-check to see if there are less Lambda functions than the split-processing threshold
+    let lambdaTasks = configuration.tasks.filter((task) => { return (task.type == "Lambda") && (task.functions.length > THRESHOLDLAMBDABUILDSFORMULTIPLEFILES); });
+
+    if (lambdaTasks.length == 0)
+        // Pass through the entire configuration as-is
+        taskFile = [configuration];
+    else
+        configuration.tasks.forEach((task) => {
+            if (!task.disabled) {
+                // Each task will, by default, be its own separately processed configuration
+                newConfiguration = new filePack(configuration);
+                taskFile.push(newConfiguration);
+
+                switch (task.type) {
+                    // Lambda will split all functions into separate configurations of MAXLAMBDABUILDSPERFILE
+                    case "Lambda":
+                        // Create a copy of the array of functions
+                        let definedFunctions = task.functions.filter(() => { return true; });
+
+                        let lambdaTask = duplicateLambdaTask(task);
+                        newConfiguration.tasks.push(lambdaTask);
+
+                        while (definedFunctions.length > 0) {
+                            if (lambdaTask.functions.length >= MAXLAMBDABUILDSPERFILE) {
+                                newConfiguration = new filePack(configuration);
+                                taskFile.push(newConfiguration);
+
+                                lambdaTask = duplicateLambdaTask(task);
+                                newConfiguration.tasks.push(lambdaTask);
+                            }
+
+                            let thisFunction = definedFunctions.shift();
+                            lambdaTask.functions.push(thisFunction);
+                        }
+                        break;
+
+                    default:
+                        newConfiguration.tasks.push(task);
+                        break;
+                }
+            }
+        });
+
+    return taskFile;
 }
 
 function writeRemainingTasks(taskFile, evtData) {

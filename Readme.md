@@ -240,7 +240,8 @@ To handle [AWS Lambda limits](https://docs.aws.amazon.com/lambda/latest/dg/limit
 The number of tasks per sub-task can be configured with *environment variables*.
 
 #### Available Per-task Variables
-+ **lambdasPerTask** - *Default: 10* - The number of Lambda functions that will be compiled and created/updated per sub-task
++ **lambdasPerTask** - *Default: **10*** - The number of Lambda functions that will be compiled and created/updated per sub-task
++ **minLambdaForSplit** - *Default: **0**, always split tasks* - The threshold # of Lambda functions to process under which a configuration will not split any of its processing into separate sub-tasks.
 
 ### Logging
 By default, all logging is written to Cloudwatch Logs using a *WARN* level.
