@@ -387,41 +387,33 @@ function loadConfiguration(preprocessedConfiguration) {
             });
 }
 
-function runTasks(configuration) {
-    return new Promise((resolve, reject) => {
-        (function processTask() {
-            if (configuration.tasks.length > 0) {
-                let task = configuration.tasks.shift();
+function runTasks(configuration, remainingTasks) {
+    if (!remainingTasks)
+        remainingTasks = configuration.tasks.filter((task) => { return !task.disabled; });
 
-                if (task.disabled)
-                    processTask();
-                else {
-                    let taskPromise = null;
+    if (remainingTasks.length > 0) {
+        let task = remainingTasks.shift(),
+            taskPromise = null;
 
-                    switch (task.type) {
-                        case "S3":
-                            taskPromise = s3Task.Task(task, extractionLocation);
-                            break;
+        switch (task.type) {
+            case "S3":
+                taskPromise = s3Task.Task(task, extractionLocation);
+                break;
 
-                        case "Lambda":
-                            taskPromise = lambdaTask.Task(task, extractionLocation, localRoot, configuration);
-                            break;
+            case "Lambda":
+                taskPromise = lambdaTask.Task(task, extractionLocation, localRoot, configuration);
+                break;
 
-                        case "ApiGateway":
-                            taskPromise = apiGatewayTask.Task(task, configuration);
-                            break;
-                    }
+            case "ApiGateway":
+                taskPromise = apiGatewayTask.Task(task, configuration);
+                break;
+        }
 
-                    taskPromise
-                        .then(() => {
-                            processTask();
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        })
-                }
-            } else
-                resolve();
-        })();
-    });
+        return taskPromise
+            .then(() => {
+                return runTasks(configuration, remainingTasks);
+            })
+            ;
+    } else
+        return Promise.resolve();
 }
