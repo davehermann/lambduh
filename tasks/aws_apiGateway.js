@@ -37,7 +37,7 @@ function deleteMethodFromResource(httpMethod, resource, apiId) {
                 this.resourceId = resource.id;
                 this.httpMethod = httpMethod.toUpperCase();
             })();
-            global.log.Info(`Deleting Method`, removeMethod);
+            global.log.Debug(`Deleting Method`, removeMethod);
             apiGateway.deleteMethod(removeMethod, (err, data) => {
                 if (!!err) {
                     global.log.Error(`Method Delete Error`, err);
@@ -76,7 +76,8 @@ function addMethodToResource(httpMethod, resource, apiId, headers, parameters) {
                         });
                 })();
         })();
-        global.log.Info(`Add Method`, newMethod);
+        global.log.Info(`Add Method ${newMethod.httpMethod}`);
+        global.log.Trace(newMethod);
         apiGateway.putMethod(newMethod, (err, data) => {
             if (!!err) {
                 global.log.Error(`Add Method Error`, err);
@@ -92,7 +93,7 @@ function addMethodToResource(httpMethod, resource, apiId, headers, parameters) {
 
 function addIntegrationRequest(integrationParameters) {
     return new Promise((resolve, reject) => {
-        global.log.Info(`Add integration`);
+        global.log.Debug(`Adding Method Integration`);
         global.log.Trace(integrationParameters);
 
         apiGateway.putIntegration(integrationParameters, (err, data) => {
@@ -282,7 +283,7 @@ function addIntegrationResponse(method, resource, apiId, headers) {
                 })();
         })();
 
-        global.log.Info(`Add Integration Response`);
+        global.log.Debug(`Adding Integration Response`);
         global.log.Trace(newResponse);
         apiGateway.putIntegrationResponse(newResponse, (err, data) => {
             if (!!err) {
@@ -309,7 +310,7 @@ function deleteMethodResponses(resource, method, apiId) {
                 this.httpMethod = method.httpMethod;
                 this.statusCode = "200";
             })();
-            global.log.Info(`Delete Method Response`);
+            global.log.Debug(`Delete Method Response`);
             global.log.Trace(removeResponse);
 
             apiGateway.deleteMethodResponse(removeResponse, (err, data) => {
@@ -348,7 +349,7 @@ function addMethodResponse(resource, method, apiId, headers) {
                             });
                         })();
                 })();
-                global.log.Info(`Add Method Response`);
+                global.log.Debug(`Adding Method Response`);
                 global.log.Trace(newResponse);
                 apiGateway.putMethodResponse(newResponse, (err, data) => {
                     if (!!err) {
@@ -370,7 +371,7 @@ function createDeployment(stageName, apiId) {
         this.stageName = stageName;
     })();
 
-    global.log.Info(`Create Deployment`);
+    global.log.Info(`Creating Deployment`);
     global.log.Trace(newDeployment);
 
     return new Promise((resolve, reject) => {
@@ -379,7 +380,7 @@ function createDeployment(stageName, apiId) {
                 global.log.Error(`Deployment Creation Error`, err);
                 reject(err);
             } else {
-                global.log.Info(`API Gateway Deployed`);
+                global.log.Warn(`API Gateway Deployed`);
                 global.log.Trace(data);
                 resolve(data);
             }

@@ -12,13 +12,13 @@ let aws = require("aws-sdk"),
     path = require("path"),
     log = require("./logger");
 
-log.level = process.env.log || "trace";
+log.level = process.env.log || "warn";
 global.log = log;
 
 let localRoot = "/tmp/deployment",
     extractionLocation = localRoot + "/extract";
 
-const MAXLAMBDABUILDSPERFILE = 10;
+const MAXLAMBDABUILDSPERFILE = process.env.lambdasPerTask || 10;
 
 module.exports.lambda = function(evtData, context, callback) {
     global.log.Trace(JSON.stringify(evtData));
@@ -54,7 +54,7 @@ function continueArchive(evtData, context) {
     let s3Source = evtData.Records[0].s3,
         fileName = path.basename(s3Source.object.key);
 
-    global.log.Info(`Continuing processing with "${s3Source.object.key} in ${s3Source.bucket.name}"`);
+    global.log.Warn(`Continuing processing with "${s3Source.object.key} in ${s3Source.bucket.name}"`);
 
     let s3 = new aws.S3({ apiVersion: '2006-03-01' });
     return new Promise((resolve, reject) => {
@@ -205,23 +205,6 @@ function duplicateLambdaTask(task) {
     lambdaTask.functions = [];
 
     return lambdaTask;
-}
-
-function duplicateTask(task) {
-    return createFilePack(task);
-}
-function createFilePack(configuration) {
-    return new (function() {
-        for (let prop in configuration)
-            switch (prop) {
-                case `tasks`:
-                    this[prop] = [];
-                    break;
-
-                default:
-                    this[prop] = configuration[prop];
-            }
-    })();
 }
 
 function filePack(configuration) {

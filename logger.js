@@ -11,8 +11,8 @@ let _level = new WeakMap();
 
 class logger {
     constructor() {
-        // Default all logging to DEBUG
-        this.level = "debug";
+        // Default all logging to WARN
+        this.level = "warn";
     }
 
     _logResponse(level, dataToDisplay) {
@@ -22,7 +22,7 @@ class logger {
 
     set level(val) {
         // Convert string to property
-        let minLevel = (typeof val === "string") ? _levels[val].toLowerCase() : val;
+        let minLevel = (typeof val === "string") ? _levels[val.toLowerCase()] : val;
 
         _level.set(this, minLevel);
     }

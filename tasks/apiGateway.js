@@ -45,7 +45,7 @@ function allExistingApis() {
             if (!!err)
                 reject(err);
             else {
-                global.log.Info(`Found ${data.items.length} APIs`);
+                global.log.Info(`Found ${data.items.length} existing APIs`);
                 global.log.Debug(data);
 
                 resolve(data);
@@ -154,7 +154,7 @@ function processEndpoints(remainingEndpoints, task, apiId, existingResources, ex
             })
             .then(() => {
                 // Rate limit to keep from running over a TooManyRequests exception
-                global.log.Info(`Waiting 1 second to limit requests to AWS APIs (${remainingEndpoints.length} remaining to process)`);
+                global.log.Info(`Waiting 1 second to rate-limit requests to AWS APIs (${remainingEndpoints.length} remaining to process)`);
 
                 return new Promise((resolve, reject) => {
                     setTimeout(function() {
@@ -176,8 +176,9 @@ function getResource(endpoint, apiId, existingResources) {
             return (endpoint.path.search(new RegExp("^" + item.path, "i")) >= 0);
         });
 
-        global.log.Info(`Endpoint`, endpoint);
-        global.log.Info(`Parents`, foundParents);
+        global.log.Info(`Endpoint "${endpoint.path}" running function "${endpoint.functionName}"`);
+        global.log.Trace(endpoint);
+        global.log.Debug(`Endpoint path parents found`, foundParents);
 
         let lowestParent = null;
         foundParents.forEach((parentItem) => {

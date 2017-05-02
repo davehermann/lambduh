@@ -42,7 +42,7 @@ function deploySequentially(functionList, existingFunctions, task, configuration
 }
 
 function allExistingFunctions() {
-    global.log.Info(`Loading Lambda function list`);
+    global.log.Info(`Loading list of existing Lambda functions`);
 
     return listLambdaFunctions(null)
         .then((fData) => {
@@ -195,7 +195,7 @@ function copyNodeModules(extractionLocation, codeLocation, filePath, localRoot) 
         // If a node_modules exists in the function path, use the node_modules
         if (files.indexOf(`node_modules`) >= 0) {
             return new Promise((resolve, reject) => {
-                global.log.Info(`Moving node_modules from ${path.normalize(`${extractionLocation}${path.dirname(filePath)}`)} to ${path.normalize(codeLocation)}`);
+                global.log.Debug(`Moving node_modules from ${path.normalize(`${extractionLocation}${path.dirname(filePath)}`)} to ${path.normalize(codeLocation)}`);
 
                 fs.move(path.normalize(`${extractionLocation}${path.dirname(filePath)}/node_modules`), path.normalize(`${codeLocation}/node_modules`), (err) => {
                     if (!!err)
@@ -362,7 +362,8 @@ function copyRequiredFile(codeLocation, extractionLocation, filePath) {
 }
 
 function deployFunction(functionDefinition, existingFunctions, task, configuration, extractionLocation, localRoot) {
-    global.log.Info(functionDefinition);
+    global.log.Info(`Deploying "${functionDefinition.name}" from "${functionDefinition.source}"`);
+    global.log.Trace(functionDefinition);
 
     let functionName = `ld_${!!configuration.applicationName ? configuration.applicationName + "_" : ""}${functionDefinition.name}`;
 
@@ -423,7 +424,8 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
                         SecurityGroupIds: []
                     }
 
-                    global.log.Info("Update Existing Lambda Function Configuration: ", functionConfiguration);
+                    global.log.Info(`Updating Existing Lambda Function Configuration`);
+                    global.log.Debug(functionConfiguration);
                     lambda.updateFunctionConfiguration(functionConfiguration, (err, data) => {
                         if (!!err) {
                             global.log.Error("Configuration Update Error: ", err);
@@ -518,7 +520,7 @@ function clearPermissions(newPermission) {
                 } else
                     reject(err);
             } else {
-                global.log.Info(`Existing Policy Found -- Needs Removal`);
+                global.log.Debug(`Existing Policies Found -- Will be removed before adding new permissions`);
                 global.log.Trace(data);
                 resolve(data);
             }
@@ -560,7 +562,7 @@ function addEventInvocationPermission(functionArn, sourceArn, sourcePrincipal) {
         this.Principal = sourcePrincipal;
         this.SourceArn = sourceArn;
     })();
-    global.log.Info(`Add Lambda Permission`);
+    global.log.Debug(`Adding Invoke permission for the Lambda function`);
     global.log.Trace(newPermission);
 
     return clearPermissions(newPermission)
@@ -582,13 +584,15 @@ function addEventInvocationPermission(functionArn, sourceArn, sourcePrincipal) {
 }
 
 function createVersion(functionArn) {
+    global.log.Info(`Tag new function version for ${functionArn}`);
+
     return new Promise((resolve, reject) => {
         lambda.publishVersion({ FunctionName: functionArn }, (err, data) => {
             if (!!err) {
                 global.log.Error(`Function Versioning Error`, err);
                 reject(err);
             } else {
-                global.log.Info(`Function Version Created`);
+                global.log.Debug(`Function Version Created`);
                 global.log.Trace(data);
 
                 resolve(data);
@@ -658,7 +662,7 @@ function getAllFunctionVersions(functionArn) {
 
 function deleteVersion(versionArn, versionNumber) {
     return new Promise((resolve, reject) => {
-        global.log.Info(`Function "${versionArn}" now removing version ${versionNumber}`);
+        global.log.Info(`Removing version #${versionNumber} from function "${versionArn}"`);
         lambda.deleteFunction({ FunctionName: versionArn, Qualifier: versionNumber }, (err, data) => {
             if (!!err) {
                 global.log.Error(`Version removal error`, err);
