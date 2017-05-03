@@ -511,14 +511,14 @@ function clearPermissions(newPermission) {
         })();
         lambda.getPolicy(findPolicy, (err, data) => {
             if (!!err) {
-                global.log.Error(err);
-
                 // In the case of no policy previously existing, continue without attempting deletion
                 if (err.code == `ResourceNotFoundException`) {
                     global.log.Error(`Skipping removal of existing permissions as no policy object exists`);
                     resolve(null);
-                } else
+                } else {
+                    global.log.Error(err);
                     reject(err);
+                }
             } else {
                 global.log.Debug(`Existing Policies Found -- Will be removed before adding new permissions`);
                 global.log.Trace(data);
@@ -665,7 +665,7 @@ function deleteVersion(versionArn, versionNumber) {
         global.log.Info(`Removing version #${versionNumber} from function "${versionArn}"`);
         lambda.deleteFunction({ FunctionName: versionArn, Qualifier: versionNumber }, (err, data) => {
             if (!!err) {
-                global.log.Error(`Version removal error`, err);
+                global.log.Error(`Version removal error [${versionNumber} from "${versionArn}"]`, err);
                 reject(err);
             } else {
                 global.log.Debug(`Version ${versionNumber} removed`);
