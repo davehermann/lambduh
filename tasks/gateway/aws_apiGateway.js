@@ -2,9 +2,9 @@
 
 let aws = require("aws-sdk"),
     apiGateway = new aws.APIGateway({ apiVersion: "2015-07-09" }),
-    lambdaTask = require("./lambda");
+    lambdaTask = require("../lambda");
 
-let apiDeployment = require("./gateway/apiDeployment");
+let apiDeployment = require("./apiDeployment");
 
 function deleteMethodFromResource(httpMethod, resource, apiId) {
     return new Promise((resolve, reject) => {

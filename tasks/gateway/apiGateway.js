@@ -2,7 +2,7 @@
 
 let aws = require("aws-sdk"),
     apiGateway = new aws.APIGateway({ apiVersion: "2015-07-09" }),
-    lambdaTask = require("./lambda"),
+    lambdaTask = require("../lambda"),
     gatewayIntegration = require("./aws_apiGateway");
 
 function apiGatewayTask(task, configuration) {
