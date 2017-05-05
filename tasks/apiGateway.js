@@ -13,7 +13,7 @@ function apiGatewayTask(task, configuration) {
             return allExistingApis();
         })
         .then((existingApis) => {
-            return applicationApi(existingApis, configuration);
+            return retrieveOrCreateApplicationApi(existingApis, configuration);
         })
         .then((apiId) => {
             global.log.Trace(`Using API ID: ${apiId}`);
@@ -54,7 +54,7 @@ function allExistingApis() {
     })
 }
 
-function applicationApi(existingApis, configuration) {
+function retrieveOrCreateApplicationApi(existingApis, configuration) {
     let foundApi = existingApis.items.filter((api) => { return api.name.toLowerCase() == configuration.applicationName.toLowerCase(); });
     if (foundApi.length > 0)
         return foundApi[0].id;
@@ -104,9 +104,8 @@ function existingApiResources(apiId, position) {
 }
 
 function createMappings(task, apiId, existingResources, existingFunctions, configuration) {
-    let endpointsToProcess = [];
-
-    task.endpoints.forEach((endpoint) => { endpointsToProcess.push(endpoint); });
+    // Work off of a copy of the endpoints array
+    let endpointsToProcess = !!task.endpoints ? task.endpoints.filter(() => { return true; }) : [];
 
     return processEndpoints(endpointsToProcess, task, apiId, existingResources, existingFunctions, configuration);
 }
@@ -167,7 +166,7 @@ function processEndpoints(remainingEndpoints, task, apiId, existingResources, ex
             })
             ;
     } else
-        return null;
+        return Promise.resolve(null);
 }
 
 function getResource(endpoint, apiId, existingResources) {
@@ -365,7 +364,7 @@ function pushToStage(task, api) {
     if (!task.stage)
         return null;
     else
-        return gatewayIntegration.Deployment_Create(task.stage, api.apiId);
+        return gatewayIntegration.Deployment_Create(task.stage, api);
 }
 
 module.exports.Task = apiGatewayTask;
