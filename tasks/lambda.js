@@ -608,7 +608,7 @@ function getAliases(functionArn) {
                 global.log.Error(`Function Aliases Error`, err);
                 reject(err);
             } else {
-                global.log.Trace(`Found Aliases for ${functionArn}`, data);
+                global.log.Trace(`Found Aliases for ${functionArn}`, JSON.stringify(data));
                 resolve(data);
             }
         });
