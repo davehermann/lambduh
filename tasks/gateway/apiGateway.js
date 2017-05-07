@@ -3,7 +3,8 @@
 let aws = require("aws-sdk"),
     apiGateway = new aws.APIGateway({ apiVersion: "2015-07-09" }),
     lambdaTask = require("../lambda"),
-    gatewayIntegration = require("./aws_apiGateway");
+    gatewayIntegration = require("./aws_apiGateway"),
+    functionIntegration = require("./integration");
 
 function apiGatewayTask(task, configuration) {
     let existingFunctions = null;
@@ -34,7 +35,7 @@ function apiGatewayTask(task, configuration) {
                 ;
         })
         .then((api) => {
-            return pushToStage(task, api);
+            return pushToStage(task, api, configuration);
         })
         ;
 }
@@ -307,7 +308,7 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
         return gatewayIntegration.Method_AddToResource("OPTIONS", resourceChain.resource, apiId)
             .then((optionsMethod) => {
                 // Add integration of type "Mock" with application/json mapping of: {"statusCode": 200}
-                return gatewayIntegration.Method_MockIntegrationRequest(optionsMethod, 200, resourceChain.resource, apiId)
+                return functionIntegration.Method_MockIntegrationRequest(optionsMethod, 200, resourceChain.resource, apiId)
                     .then((integrationRequest) => {
                         return optionsMethod;
                     });
@@ -360,11 +361,11 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
     }
 }
 
-function pushToStage(task, api) {
+function pushToStage(task, api, configuration) {
     if (!task.stage)
         return null;
     else
-        return gatewayIntegration.Deployment_Create(task.stage, api);
+        return gatewayIntegration.Deployment_Create(task.stage, api, configuration);
 }
 
 module.exports.Task = apiGatewayTask;
