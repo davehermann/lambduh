@@ -1,7 +1,8 @@
 let aws = require("aws-sdk"),
     apiGateway = new aws.APIGateway({ apiVersion: "2015-07-09" }),
     lambdaTask = require("../lambda"),
-    functionIntegration = require("./integration");
+    functionIntegration = require("./integration"),
+    functionResponse = require("./response");
 
 function createDeployment(task, api, configuration) {
     let apiId = api.apiId;
@@ -16,7 +17,7 @@ function createDeployment(task, api, configuration) {
 
     // Pull the entire API
     // Step through the entire set of API resources
-    return getResourceIntegration(api, stageName, configuration)
+    return getResourceIntegration(api, task, configuration)
         .then(() => {
             return apiGateway.createDeployment(newDeployment).promise();
         })
@@ -89,7 +90,17 @@ function getMethods(methodList, resource, task, apiId, configuration) {
 
                                             // Get the function name from the versionless ARN
                                             let arnParts = noVersionArn.split(`:`);
-                                            return functionIntegration.IntegrateToLambdaWithDefinedRequestTemplates(methodDetails.httpMethod, resource, apiId, configuration.awsRegion, configuration.awsAccountId, neededAlias[0].AliasArn, existingIntegration.requestTemplates, arnParts[arnParts.length - 1]);
+                                            return functionIntegration.IntegrateToLambdaWithDefinedRequestTemplates(methodDetails.httpMethod, resource, apiId, configuration.awsRegion, configuration.awsAccountId, neededAlias[0].AliasArn, existingIntegration.requestTemplates, arnParts[arnParts.length - 1])
+                                                .then(() => {
+                                                    // The integration response will have been wiped out, so regenerate
+                                                    return functionResponse.GenerateIntegrationReponse(task, methodDetails.httpMethod, resource, apiId);
+                                                })
+                                                // If the method response were to be wiped out, this would be where to regenerate
+                                                // .then(() => {
+                                                //     // The method response will have been wiped out, so regenerate
+                                                //     return functionResponse.GenerateMethodResponse(task, methodDetails.httpMethod, resource, apiId);
+                                                // })
+                                                ;
                                         })
                                         ;
                             })

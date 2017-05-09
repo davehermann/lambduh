@@ -266,7 +266,7 @@ function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, t
 }
 
 function integrationResponse(endpoint, resourceChain, apiId, task) {
-    return functionResponse.GenerateIntegrationReponse(task, resourceChain.method.httpMethod, resourceChain.resource, apiId);
+    return functionResponse.GenerateIntegrationReponse(task, resourceChain.method.httpMethod, resourceChain.resource, apiId)
         .then((integrationResponseData) => {
             resourceChain.integrationResponse = integrationResponseData;
             return resourceChain;
@@ -274,20 +274,15 @@ function integrationResponse(endpoint, resourceChain, apiId, task) {
 }
 
 function methodResponse(endpoint, resourceChain, apiId, task) {
-    let headers = null;
-
-    // Add Access-Control-Allow-Origin header to the resource method
-    if (!!task.cors && !!task.cors.origin)
-        headers = [
-            // Access-Control-Allow-Origin = the configured CORS origin
-            { "name":"Access-Control-Allow-Origin" }
-        ]
-
-    return functionResponse.AddMethodResponse(resourceChain.resource, resourceChain.method, apiId, headers)
-        .then((methodResponse) => {
-            resourceChain.methodResponse = methodResponse;
+    return functionResponse.DeleteMethodResponses(resourceChain.resource, resourceChain.method, apiId)
+        .then(() => {
+            return functionResponse.GenerateMethodResponse(task, resourceChain.method.httpMethod, resourceChain.resource, apiId);
+        })
+        .then((methodResponseData) => {
+            resourceChain.methodResponse = methodResponseData;
             return resourceChain;
-        });
+        })
+        ;
 }
 
 function addCorsMethod(endpoint, resourceChain, apiId, task) {
@@ -318,10 +313,14 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
                         { "name":"Access-Control-Allow-Origin" }
                     ];
 
-                return functionResponse.AddMethodResponse(resourceChain.resource, optionsMethod, apiId, headers)
-                    .then((methodResponse) => {
+                return functionResponse.DeleteMethodResponses(resourceChain.resource, optionsMethod, apiId)
+                    .then(() => {
+                        return functionResponse.AddMethodResponse(resourceChain.resource, optionsMethod.httpMethod, apiId, headers);
+                    })
+                    .then((methodResponseData) => {
                         return optionsMethod;
-                    });
+                    })
+                    ;
             })
             .then((optionsMethod) => {
                 // Add integration response of 200 with an empty application/json mapping template
