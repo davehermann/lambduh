@@ -1,12 +1,25 @@
 let aws = require("aws-sdk"),
     apiGateway = new aws.APIGateway({ apiVersion: "2015-07-09" });
 
-function addIntegrationResponse(method, resource, apiId, headers) {
+function generateIntegrationResponse(taskConfiguration, httpMethod, resource, apiId) {
+    let headers = null;
+
+    // Add Access-Control-Allow-Origin header to the resource method
+    if (!!taskConfiguration.cors && !!taskConfiguration.cors.origin)
+        headers = [
+            // Access-Control-Allow-Origin = the configured CORS origin
+            { "name":"Access-Control-Allow-Origin", "value":taskConfiguration.cors.origin }
+        ];
+
+    return addIntegrationResponse(httpMethod, resource, apiId, headers);
+}
+
+function addIntegrationResponse(httpMethod, resource, apiId, headers) {
     return new Promise((resolve, reject) => {
         let newResponse = new (function() {
             this.restApiId = apiId;
             this.resourceId = resource.id;
-            this.httpMethod = method.httpMethod;
+            this.httpMethod = httpMethod;
             this.statusCode = "200";
             this.responseTemplates = new (function() {
                 this["application/json"] = null;
@@ -102,5 +115,6 @@ function deleteMethodResponses(resource, method, apiId) {
     return Promise.all(responseRemovals);
 }
 
+module.exports.GenerateIntegrationReponse = generateIntegrationResponse;
 module.exports.AddIntegrationResponse = addIntegrationResponse;
 module.exports.AddMethodResponse = addMethodResponse;

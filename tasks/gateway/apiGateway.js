@@ -266,18 +266,9 @@ function lambdaIntegration(endpoint, resource, method, apiId, lambdaFunctions, t
 }
 
 function integrationResponse(endpoint, resourceChain, apiId, task) {
-    let headers = null;
-
-    // Add Access-Control-Allow-Origin header to the resource method
-    if (!!task.cors && !!task.cors.origin)
-        headers = [
-            // Access-Control-Allow-Origin = the configured CORS origin
-            { "name":"Access-Control-Allow-Origin", "value":task.cors.origin }
-        ];
-
-    return functionResponse.AddIntegrationResponse(resourceChain.method, resourceChain.resource, apiId, headers)
-        .then((integrationResponse) => {
-            resourceChain.integrationResponse = integrationResponse;
+    return functionResponse.GenerateIntegrationReponse(task, resourceChain.method.httpMethod, resourceChain.resource, apiId);
+        .then((integrationResponseData) => {
+            resourceChain.integrationResponse = integrationResponseData;
             return resourceChain;
         });
 }
@@ -353,8 +344,8 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
                     { "name":"Access-Control-Allow-Origin", "value":task.cors.origin }
                 ];
 
-                return functionResponse.AddIntegrationResponse(optionsMethod, resourceChain.resource, apiId, headers)
-                    .then((integrationResponse) => {
+                return functionResponse.AddIntegrationResponse(optionsMethod.httpMethod, resourceChain.resource, apiId, headers)
+                    .then((integrationResponseData) => {
                         return optionsMethod;
                     });
             })
