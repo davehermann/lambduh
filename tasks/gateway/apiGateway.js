@@ -4,7 +4,8 @@ let aws = require("aws-sdk"),
     apiGateway = new aws.APIGateway({ apiVersion: "2015-07-09" }),
     lambdaTask = require("../lambda"),
     gatewayIntegration = require("./aws_apiGateway"),
-    functionIntegration = require("./integration");
+    functionIntegration = require("./integration"),
+    functionResponse = require("./response");
 
 function apiGatewayTask(task, configuration) {
     let existingFunctions = null;
@@ -274,7 +275,7 @@ function integrationResponse(endpoint, resourceChain, apiId, task) {
             { "name":"Access-Control-Allow-Origin", "value":task.cors.origin }
         ];
 
-    return gatewayIntegration.Method_AddIntegrationResponse(resourceChain.method, resourceChain.resource, apiId, headers)
+    return functionResponse.AddIntegrationResponse(resourceChain.method, resourceChain.resource, apiId, headers)
         .then((integrationResponse) => {
             resourceChain.integrationResponse = integrationResponse;
             return resourceChain;
@@ -291,7 +292,7 @@ function methodResponse(endpoint, resourceChain, apiId, task) {
             { "name":"Access-Control-Allow-Origin" }
         ]
 
-    return gatewayIntegration.Method_AddMethodResponse(resourceChain.resource, resourceChain.method, apiId, headers)
+    return functionResponse.AddMethodResponse(resourceChain.resource, resourceChain.method, apiId, headers)
         .then((methodResponse) => {
             resourceChain.methodResponse = methodResponse;
             return resourceChain;
@@ -326,7 +327,7 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
                         { "name":"Access-Control-Allow-Origin" }
                     ];
 
-                return gatewayIntegration.Method_AddMethodResponse(resourceChain.resource, optionsMethod, apiId, headers)
+                return functionResponse.AddMethodResponse(resourceChain.resource, optionsMethod, apiId, headers)
                     .then((methodResponse) => {
                         return optionsMethod;
                     });
@@ -352,7 +353,7 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
                     { "name":"Access-Control-Allow-Origin", "value":task.cors.origin }
                 ];
 
-                return gatewayIntegration.Method_AddIntegrationResponse(optionsMethod, resourceChain.resource, apiId, headers)
+                return functionResponse.AddIntegrationResponse(optionsMethod, resourceChain.resource, apiId, headers)
                     .then((integrationResponse) => {
                         return optionsMethod;
                     });
