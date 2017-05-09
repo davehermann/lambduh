@@ -366,7 +366,7 @@ function pushToStage(task, api, configuration) {
     if (!task.stage)
         return null;
     else
-        return gatewayIntegration.Deployment_Create(task.stage, api, configuration);
+        return gatewayIntegration.Deployment_Create(task, api, configuration);
 }
 
 module.exports.Task = apiGatewayTask;

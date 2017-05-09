@@ -3,12 +3,12 @@ let aws = require("aws-sdk"),
     lambdaTask = require("../lambda"),
     functionIntegration = require("./integration");
 
-function createDeployment(stageName, api, configuration) {
+function createDeployment(task, api, configuration) {
     let apiId = api.apiId;
 
     let newDeployment = new (function() {
         this.restApiId = apiId;
-        this.stageName = stageName;
+        this.stageName = task.stage;
     })();
 
     global.log.Info(`Creating Deployment`);
@@ -27,7 +27,7 @@ function createDeployment(stageName, api, configuration) {
         ;
 }
 
-function getResourceIntegration(api, stageName, configuration, resourceList) {
+function getResourceIntegration(api, task, configuration, resourceList) {
     if (!resourceList)
         resourceList = api.existingResources.items.filter(() => { return true; });
 
@@ -40,16 +40,16 @@ function getResourceIntegration(api, stageName, configuration, resourceList) {
         for (let methodName in thisResource.resourceMethods)
             methodList.push(methodName);
 
-        return getMethods(methodList, thisResource, stageName, api.apiId, configuration)
+        return getMethods(methodList, thisResource, task, api.apiId, configuration)
             .then(() => {
-                return getResourceIntegration(api, stageName, configuration, resourceList);
+                return getResourceIntegration(api, task, configuration, resourceList);
             })
             ;
     } else
         return Promise.resolve();
 }
 
-function getMethods(methodList, resource, stageName, apiId, configuration) {
+function getMethods(methodList, resource, task, apiId, configuration) {
     if (methodList.length > 0) {
         let methodName = methodList.shift();
 
@@ -63,17 +63,17 @@ function getMethods(methodList, resource, stageName, apiId, configuration) {
                     global.log.Trace(arn);
 
                     // The arn needs to end with the matching stage name
-                    if (arn.search(new RegExp(`\\:${stageName}$`)) < 0) {
+                    if (arn.search(new RegExp(`\\:${task.stage}$`)) < 0) {
                         // Pull all aliases for the function
                         let noVersionArn = arn.split(`:`).slice(0, 7).join(`:`);
                         return lambdaTask.GetAliases(noVersionArn)
                             .then((foundAliases) => {
                                 // Find one tagged with the stage name
-                                let neededAlias = foundAliases.Aliases.filter((alias) => { return alias.Name === stageName; });
+                                let neededAlias = foundAliases.Aliases.filter((alias) => { return alias.Name === task.stage; });
 
                                 // If none exists, throw an error as the release intent is unknown
                                 if (neededAlias.length == 0)
-                                    throw `No alias ${stageName} exists for ${noVersionArn}.`;
+                                    throw `No alias ${task.stage} exists for ${noVersionArn}.`;
                                 else
                                     // Get the existing integration
                                     return functionIntegration.GetExistingIntegration(methodDetails.httpMethod, resource.id, apiId)
@@ -104,7 +104,7 @@ function getMethods(methodList, resource, stageName, apiId, configuration) {
                 return throttle(400);
             })
             .then(() => {
-                return getMethods(methodList, resource, stageName, apiId, configuration);
+                return getMethods(methodList, resource, task, apiId, configuration);
             })
             ;
     } else
