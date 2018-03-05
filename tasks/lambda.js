@@ -295,70 +295,80 @@ function addFilesToZip(directoryToScan, functionName) {
     });
 }
 
-function copyRequiredFile(codeLocation, extractionLocation, filePath) {
-    let destination = path.normalize(`${codeLocation}${filePath}`),
-        source = path.normalize(`${extractionLocation}${filePath}`);
+function copyRequiredFile(codeLocation, extractionLocation, remainingFiles) {
+    if (remainingFiles.length > 0) {
+        let filePath = remainingFiles.shift();
 
-    return new Promise((resolve, reject) => {
-        // Determine if the file exists
+        let destination = path.normalize(`${codeLocation}${filePath}`),
+            source = path.normalize(`${extractionLocation}${filePath}`);
 
-        fs.stat(destination, (err, stats) => {
-            if (!!err || !stats) {
-                global.log.Trace(`${destination} does not exist. Copying from ${source}`);
+        return new Promise((resolve, reject) => {
+            // Determine if the file exists
 
-                // // Create the directory
-                // fs.mkdirsSync(`${codeLocation}${path.dirname(filePath)}`);
+            fs.stat(destination, (err, stats) => {
+                if (!!err || !stats) {
+                    global.log.Trace(`${destination} does not exist. Copying from ${source}`);
 
-                fs.copy(source, destination, (err) => {
-                    if (!!err)
-                        reject(err);
-                    else
-                        resolve(true);
-                });
-            } else {
-                global.log.Trace(`Skipping ${source} as ${destination} exists`);
-                resolve(false);
-            }
-        });
-    })
-    .then((newlyCopied) => {
-        if (newlyCopied) {
-            // Read the source file, and extract any requires
-            let sourceFile = fs.readFileSync(`${codeLocation}${filePath}`, "utf8");
+                    // // Create the directory
+                    // fs.mkdirsSync(`${codeLocation}${path.dirname(filePath)}`);
 
-            let foundRequires = sourceFile.match(/require\(\".+\"\)/g);
-            global.log.Debug("Requires: ", foundRequires);
-            let loadRequires = [];
-
-            if (!!foundRequires)
-                foundRequires.forEach((req) => {
-                    let requireItem = req.match(/\(\"(.+)\"\)/g);
-                    if (RegExp.$1.substr(0, 1) == ".")
-                        loadRequires.push(RegExp.$1);
-                });
-            global.log.Trace("Load: ", loadRequires);
-
-            return loadRequires;
-        } else
-            return null;
-    })
-    .then((loadRequires) => {
-        if ((loadRequires === null) || (loadRequires.length == 0))
-            return null;
-        else {
-            let pRequires = [];
-            loadRequires.forEach((req) => {
-                let loadFile = `${path.dirname(filePath)}/${req}`;
-                if (loadFile.search(/\.json$/) < 0)
-                    loadFile += ".js";
-
-                pRequires.push(copyRequiredFile(codeLocation, extractionLocation, loadFile));
+                    fs.copy(source, destination, (err) => {
+                        if (!!err)
+                            reject(err);
+                        else
+                            resolve(true);
+                    });
+                } else {
+                    global.log.Trace(`Skipping ${source} as ${destination} exists`);
+                    resolve(false);
+                }
             });
+        })
+            .then((newlyCopied) => {
+                if (newlyCopied) {
+                    // Read the source file, and extract any requires
+                    let sourceFile = fs.readFileSync(`${codeLocation}${filePath}`, "utf8");
 
-            return Promise.all(pRequires);
-        }
-    })
-    ;
+                    let foundRequires = sourceFile.match(/require\(\".+\"\)/g);
+                    global.log.Debug("Requires: ", foundRequires);
+                    let loadRequires = [];
+
+                    if (!!foundRequires)
+                        foundRequires.forEach((req) => {
+                            let requireItem = req.match(/\(\"(.+)\"\)/g);
+                            if (RegExp.$1.substr(0, 1) == ".")
+                                loadRequires.push(RegExp.$1);
+                        });
+                    global.log.Trace("Load: ", loadRequires);
+
+                    return loadRequires;
+                } else
+                    return null;
+            })
+            .then((loadRequires) => {
+                if ((loadRequires === null) || (loadRequires.length == 0))
+                    return null;
+                else {
+                    let requiredFiles = [];
+
+                    loadRequires.forEach((req) => {
+                        let loadFile = `${path.dirname(filePath)}/${req}`;
+                        if (loadFile.search(/\.json$/) < 0)
+                            loadFile += ".js";
+
+                        requiredFiles.push(loadFile);
+                    });
+
+                    remainingFiles = remainingFiles.concat(requiredFiles);
+                    return null;
+                }
+            })
+            .then(() => {
+                return copyRequiredFile(codeLocation, extractionLocation, remainingFiles);
+            })
+            ;
+    } else
+        return Promise.resolve();
 }
 
 function deployFunction(functionDefinition, existingFunctions, task, configuration, extractionLocation, localRoot) {
@@ -374,7 +384,7 @@ function deployFunction(functionDefinition, existingFunctions, task, configurati
     return copyNodeModules(extractionLocation, codeLocation, functionDefinition.source, localRoot)
         .then(() => {
             global.log.Debug(`Walk/Copy requires`);
-            return copyRequiredFile(codeLocation, extractionLocation, functionDefinition.source);
+            return copyRequiredFile(codeLocation, extractionLocation, [functionDefinition.source]);
         })
         .then(() => {
             return addFilesToZip(codeLocation, functionName)
