@@ -39,13 +39,23 @@ JSON configuration and detailed description:
 ```
 {
     "applicationName": "SomeGoodName",
+    "taskFilters": {},
     "tasks": []
 }
 ```
 + The *applicationName* will be used as part of the AWS Lambda function naming, and the API Gateway name for the API
 
++ *taskFilters* is optional, and very useful when the array of Lambda functions or API Gateway endpoints becomes too large to manually delete from when working with test deployments
+    + ```{ "include": { "lambda": null, "apiGateway": null } }```
+        + ```"lambda"``` is a string array listing the **functionName** property of the functions to include in deployment  
+        ```"lambda": [ "function1", "function2" ]```
+        + ```"apiGateway"``` is an object array that can include the **path** or **functionName** on the endpoint (or non-endpoint alias for versioned, not-public functions), and can optionally specify the **method** as well  
+        ```"apiGateway": [ { "path": "/gateway/path/to/use" }, { "functionName": "function1" }, { "functionName": "function2", "method": "GET" } ]```
+            + If ```"apiGateway"``` is not specified, but one or more functions are listed for ```"lambda"```, ```"apiGateway"``` will automatically be generated for only those functions
+    + ```{ "exclude" }``` **- not yet implemented**
+
 + Objects in the *tasks* array are of 3 types
-    + S3 tasks
+    + <u>S3 tasks</u>
     ```
     {
         "disabled": false,
@@ -59,7 +69,7 @@ JSON configuration and detailed description:
     ```
         + deploy all code in your application from `/a/path/to/frontend` to an S3 bucket named `bucketname` under the `optional/key/prefix` directory within the bucket
         + dest.key is an optional field - use it if you need it
-    + Lambda tasks
+    + <u>Lambda tasks</u>
     ```
     {
         "disabled": false,
@@ -86,7 +96,7 @@ JSON configuration and detailed description:
             + Lambda calculates code size based on the package deployed to it
             + As any compression over 0 will require additional memory,
 
-    + API Gateway tasks
+    + <u>API Gateway tasks</u>
     ```
     {
         "disabled": false,

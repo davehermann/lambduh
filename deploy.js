@@ -154,10 +154,79 @@ function resortTasksByType(configuration) {
     configuration.tasks.forEach((task) => { delete task.initialTaskOrder; });
 }
 
+function filterForIncludeExcludeTasks(configuration) {
+    if (!configuration.taskFilters)
+        return;
+
+    // Handle the includes first
+    if (!!configuration.taskFilters.include) {
+        // If Lambda functions are defined, filter the Lambda functions
+        if (!!configuration.taskFilters.include.lambda) {
+            let lambdaTasks = configuration.tasks.filter(task => { return (task.type.toLowerCase() == `lambda`); });
+
+            lambdaTasks.forEach(task => {
+                task.functions = task.functions.filter(lambdaFunction => {
+                    return (configuration.taskFilters.include.lambda.indexOf(lambdaFunction.name) >= 0);
+                });
+            });
+        }
+
+        // If no API Gateway filter is specified, and a Lambda functions filter exists, automatically set to only the matching functions
+        if (!configuration.taskFilters.include.apiGateway && !!configuration.taskFilters.include.lambda)
+            configuration.taskFilters.include.apiGateway = configuration.taskFilters.include.lambda.map(functionName => {
+                return { "functionName": functionName };
+            });
+
+            // For API Gateway, filter can be path or function name, and can specify a method
+        if (!!configuration.taskFilters.include.apiGateway) {
+            let apiGatewayTasks = configuration.tasks.filter(task => { return (task.type.toLowerCase() == `apigateway`); }),
+                byPath = {},
+                byFunction = {};
+
+            configuration.taskFilters.include.apiGateway.forEach(f => {
+                if (!!f.path)
+                    byPath[f.path] = f;
+
+                if (!!f.functionName)
+                    byFunction[f.functionName] = f;
+            });
+
+            apiGatewayTasks.forEach(task => {
+                if (!!task.aliasNonEndpoints) {
+                    task.aliasNonEndpoints = task.aliasNonEndpoints.filter(lambdaFunction => { return !!byFunction[lambdaFunction.functionName]; });
+
+                    if (task.aliasNonEndpoints.length == 0)
+                        delete task.aliasNonEndpoints;
+                }
+
+                // Filter endpoints by path/function, and (if specified) by method
+                let pathEndpoints = task.endpoints.filter(endpoint => { return !!byPath[endpoint.path] && (!!byPath[endpoint.path].method ? (endpoint.method.toLowerCase() == byPath[endpoint.path].method.toLowerCase()) : true); }),
+                    functionEndpoints = task.endpoints.filter(endpoint => { return !!byFunction[endpoint.functionName] && (!!byFunction[endpoint.functionName].method ? (endpoint.method.toLowerCase() == byFunction[endpoint.functionName].method.toLowerCase()) : true); });
+
+                // Combine endpoints into a final list by path-method pairs
+                let knownEndpoints = {};
+                pathEndpoints.forEach(endpoint => { knownEndpoints[`${endpoint.path}::${endpoint.method.toLowerCase()}`] = endpoint; });
+                functionEndpoints.forEach(endpoint => { knownEndpoints[`${endpoint.path}::${endpoint.method.toLowerCase()}`] = endpoint; });
+
+                task.endpoints = [];
+                for (let pathMethod in knownEndpoints)
+                    task.endpoints.push(knownEndpoints[pathMethod]);
+                task.endpoints.sort((a, b) => { return a.path < b.path ? -1 : 1; });
+            });
+        }
+    }
+
+    // Excludes will be from whatever remains after the includes are processed
+    if (!!configuration.taskFilters.exclude) {
+        // TBD
+    }
+}
+
 function splitProcessingAcrossSeveralInstances(configuration, hasBeenProcessed) {
     let taskFile = [];
 
     if (!hasBeenProcessed) {
+        filterForIncludeExcludeTasks(configuration);
         resortTasksByType(configuration);
 
         // Each task should be run as its own separate configuration file
