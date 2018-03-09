@@ -135,6 +135,9 @@ JSON configuration and detailed description:
         + Create an OPTIONS method for `/request/path/from/root/{optionalParameters}`
             + Sends appropriate CORS response, including the Access-Control-Allow-Origin set to `*`
                 + configured with the `"cors": { "origin": "*" }` line
+                + `"origin"` is required
+                + `"allowed": {}` is optional
+                    + `"allowed": { "headers": [] }` will add any header in the array to the *Access-Control-Allow-Headers* value for all API Gateway *OPTIONS* responses
         + Creates the stage deployment named `nameYourStage`
 
 

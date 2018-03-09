@@ -329,9 +329,12 @@ function addCorsMethod(endpoint, resourceChain, apiId, task) {
                 // Configure to use AWS-necessary (Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token),
                 //      and any defined in the endpoint
                 let allowedHeaders = [ "Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token" ];
+                if (!!task.cors && !!task.cors.allowed && !!task.cors.allowed.headers)
+                    allowedHeaders = allowedHeaders.concat(task.cors.allowed.headers.filter(header => { return (allowedHeaders.indexOf(header) < 0); }));
                 if (!!endpoint.headers)
                     endpoint.headers.forEach((header) => {
-                        allowedHeaders.push(header.name);
+                        if (allowedHeaders.indexOf(header.name) < 0)
+                            allowedHeaders.push(header.name);
                     });
 
                 let headers = [
