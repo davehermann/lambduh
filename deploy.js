@@ -34,7 +34,7 @@ function startProcessing(evtData, context) {
         if (fileName.search(/^config\..*\.lambduh$/) >= 0)
             return nextProcessStep();
         else
-            return Initialize(context, localRoot);
+            return Initialize(evtData, context, localRoot, extractionLocation);
     }
 }
 
