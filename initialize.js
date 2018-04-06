@@ -25,7 +25,8 @@ function initialize(evtData, context, localRoot, extractionLocation) {
         // Remove temporary files
         .then(() => cleanTemporaryRoot(localRoot))
         .then(() => extractArchive(evtData.Records[0].s3, extractionLocation))
-        .then(() => loadConfiguration(extractionLocation));
+        .then(() => loadConfiguration(extractionLocation))
+        .then(configuration => sortConfigurationTasks(configuration));
 }
 
 // Clean any existing files that may exist from prior execution of this instance
@@ -87,11 +88,47 @@ function loadConfiguration(extractionLocation) {
         .then(configurationFileContents => {
             if (!!configurationFileContents) {
                 let configuration = JSON.parse(configurationFileContents);
-                log.Debug(configuration, true);
+                log.Debug({ "Loaded Configuration": configuration }, true);
                 return configuration;
             } else
                 return Promise.reject(`No configuration file found in either extracted source or function root`);
         });
+}
+
+function sortConfigurationTasks(configuration) {
+    // First, sort tasks to move Lambda tasks to the front, followed by API Gateway, and then all S3 tasks
+    // Maintain existing order, other than those changes
+
+    // Add an ordinal property
+    configuration.tasks.forEach((task, idx) => { task.initialTaskOrder = idx; });
+
+    // Sort by task type
+    configuration.tasks.sort((a, b) => {
+        if (a.type === b.type)
+            return a.initialTaskOrder - b.initialTaskOrder;
+        else {
+            switch (a.type) {
+                // S3 always goes at the end
+                case `S3`:
+                    return 1;
+
+                // Lambda always goes at the beginning
+                case `Lambda`:
+                    return -1;
+
+                // API Gateway should be after Lambda and before S3
+                case `ApiGateway`:
+                    return b.type === `Lambda` ? 1 : -1;
+            }
+        }
+    });
+
+    // Remove the ordinal property
+    configuration.tasks.forEach((task) => { delete task.initialTaskOrder; });
+
+    log.Trace({ "Re-ordered Configuration": configuration }, true);
+
+    return Promise.resolve(configuration);
 }
 
 module.exports.Initialize = initialize;
