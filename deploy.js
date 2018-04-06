@@ -2,7 +2,8 @@
 
 const path = require(`path`),
     { Initialize } = require(`./initialize`),
-    log = require(`./logging`);
+    log = require(`./logging`),
+    { NextSteps } = require(`./tasks/processRemainingTasks`);
 
 global.logLevel = process.env.log || `warn`;
 
@@ -31,13 +32,9 @@ function startProcessing(evtData, context) {
         let s3Source = evtData.Records[0].s3,
             fileName = path.basename(s3Source.object.key);
 
-        if (fileName.search(/^config\..*\.lambduh$/) >= 0)
-            return nextProcessStep();
+        if (fileName.search(/\.lambduh\.txt$/) >= 0)
+            return NextSteps(evtData, localRoot, extractionLocation);
         else
             return Initialize(evtData, context, localRoot, extractionLocation);
     }
-}
-
-function nextProcessStep() {
-    return Promise.resolve();
 }

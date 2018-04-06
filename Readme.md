@@ -161,15 +161,26 @@ JSON configuration and detailed description:
     ```
     + **S3** - For where you will place the code archive to start the deployment process
     ```
-    "Effect": "Allow",
-    "Action": [
-        "s3:DeleteObject",
-        "s3:GetObject",
-        "s3:PutObject"
-    ],
-    "Resource": [
-        "arn:aws:s3:::YOUR-BUCKET-NAME-FOR-DROPPING-THE-CODE-ARCHIVE/*"
-    ]
+    {
+        "Effect": "Allow",
+        "Action": [
+            "s3:ListBucket"
+        ],
+        "Resource": [
+            "arn:aws:s3:::YOUR-BUCKET-NAME-FOR-DROPPING-THE-CODE-ARCHIVE"
+        ]
+    },
+    {
+        "Effect": "Allow",
+        "Action": [
+            "s3:DeleteObject",
+            "s3:GetObject",
+            "s3:PutObject"
+        ],
+        "Resource": [
+            "arn:aws:s3:::YOUR-BUCKET-NAME-FOR-DROPPING-THE-CODE-ARCHIVE/*"
+        ]
+    }
     ```
     + **S3** - For ***each*** bucket receiving deployments
     ```
