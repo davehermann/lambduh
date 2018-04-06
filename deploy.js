@@ -1,8 +1,8 @@
 "use strict";
 
-const log = require(`./logging`),
-    path = require(`path`),
-    { Initialize } = require(`./initialize`);
+const path = require(`path`),
+    { Initialize } = require(`./initialize`),
+    log = require(`./logging`);
 
 global.logLevel = process.env.log || `warn`;
 
@@ -34,7 +34,7 @@ function startProcessing(evtData, context) {
         if (fileName.search(/^config\..*\.lambduh$/) >= 0)
             return nextProcessStep();
         else
-            return Initialize(context);
+            return Initialize(context, localRoot);
     }
 }
 
