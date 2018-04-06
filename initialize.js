@@ -1,10 +1,12 @@
 "use strict";
 
 const aws = require(`aws-sdk`),
+    { DateTime } = require(`luxon`),
     fs = require(`fs-extra`),
     tar = require(`tar`),
     { FunctionConfiguration } = require(`./tasks/lambda/lambda`),
-    log = require(`./logging`);
+    log = require(`./logging`),
+    { WriteRemainingTasks } = require(`./writeToS3`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
@@ -27,7 +29,18 @@ function initialize(evtData, context, localRoot, extractionLocation) {
         .then(() => extractArchive(evtData.Records[0].s3, extractionLocation))
         .then(() => loadConfiguration(extractionLocation))
         .then(configuration => sortConfigurationTasks(configuration))
-        .then(configuration => filterTasksByIncludeOrExcludeConfiguration(configuration));
+        .then(configuration => filterTasksByIncludeOrExcludeConfiguration(configuration))
+        .then(configuration => {
+            // Add data to be tracked as part of the continuing tasks
+            configuration.index = 0;
+            configuration.awsRegion = awsRegion;
+            configuration.awsAccountId = awsAccountId;
+            configuration.startTime = DateTime.utc();
+
+            return configuration;
+        })
+        // Write the initial task file
+        .then(configuration => WriteRemainingTasks(configuration, evtData));
 }
 
 // Clean any existing files that may exist from prior execution of this instance

@@ -7,6 +7,7 @@
   "author": "Dave Hermann <hermann.dp+github@gmail.com>",
   "dependencies": {
     "fs-extra": "^5.0.0",
+    "luxon": "^1.0.0",
     "tar": "^4.4.1"
   }
 }
