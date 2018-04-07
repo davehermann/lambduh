@@ -9,6 +9,10 @@ function removeProcessingFiles(s3Source, remainingTasks) {
     Debug(`Removing all files related to processing this archive`);
 
     return listFilesForArchiveProcessing(s3Source.bucket.name, remainingTasks.startTime.valueOf() + ``)
+        .then(foundFiles => {
+            Trace({ "Files to be removed": foundFiles }, true);
+            return foundFiles;
+        })
         .then(foundFiles => removeFiles(s3Source.bucket.name, foundFiles));
 }
 
@@ -28,10 +32,8 @@ function listFilesForArchiveProcessing(Bucket, Prefix, foundFiles, ContinuationT
 
                 return listFilesForArchiveProcessing(Bucket, Prefix, foundFiles, data.NextContinuationToken);
             });
-    } else {
-        Trace({ "Files to be removed": foundFiles }, true);
+    } else
         return Promise.resolve(foundFiles);
-    }
 }
 
 function removeFiles(Bucket, remainingFiles) {
@@ -67,5 +69,7 @@ function writeRemainingTasks(remainingTasks, originalSource) {
     return s3.putObject(params).promise();
 }
 
+module.exports.ListFilesInBucket = listFilesForArchiveProcessing;
 module.exports.RemoveProcessingFiles = removeProcessingFiles;
+module.exports.RemoveFiles = removeFiles;
 module.exports.WriteRemainingTasks = writeRemainingTasks;
