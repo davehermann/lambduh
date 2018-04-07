@@ -1,6 +1,10 @@
 "use strict";
 
 const aws = require(`aws-sdk`),
+    fs = require(`fs-extra`),
+    mime = require(`mime-types`),
+    path = require(`path`),
+    { ReadDirectoryContents } = require(`./extractArchive`),
     { Trace, Debug } = require(`./logging`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
@@ -69,7 +73,42 @@ function writeRemainingTasks(remainingTasks, originalSource) {
     return s3.putObject(params).promise();
 }
 
+function writeArchive(s3Source, extractionLocation, startTime) {
+    return ReadDirectoryContents(extractionLocation)
+        .then(foundFiles => {
+            Debug({ "Extracted Archive": foundFiles }, true);
+            Debug(`Writing archive to S3`);
+            return foundFiles;
+        })
+        .then(foundFiles => writeSystemFilesToS3(s3Source, extractionLocation, startTime.valueOf(), foundFiles))
+        .then(() => { Debug(`...archive written`); });
+}
+
+function writeSystemFilesToS3(s3Source, extractionLocation, startTime, remainingFiles) {
+    if (remainingFiles.length > 0) {
+        let nextFile = remainingFiles.shift();
+
+        return fs.readFile(nextFile)
+            .then(fileContents => {
+                let objectParams = {
+                    Bucket: s3Source.bucket.name,
+                    Key: `${startTime}/archive/${nextFile.replace(`${extractionLocation}/`, ``)}`,
+                    Body: fileContents
+                };
+
+                let mimeType = mime.lookup(path.extname(nextFile));
+                if (!!mimeType)
+                    objectParams.ContentType = mimeType;
+
+                return s3.putObject(objectParams).promise();
+            })
+            .then(() => writeSystemFilesToS3(s3Source, extractionLocation, startTime, remainingFiles));
+    } else
+        return Promise.resolve();
+}
+
 module.exports.ListFilesInBucket = listFilesForArchiveProcessing;
 module.exports.RemoveProcessingFiles = removeProcessingFiles;
 module.exports.RemoveFiles = removeFiles;
 module.exports.WriteRemainingTasks = writeRemainingTasks;
+module.exports.WriteExtractedArchiveToS3 = writeArchive;

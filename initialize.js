@@ -5,15 +5,20 @@ const { DateTime } = require(`luxon`),
     { CleanTemporaryRoot, ExtractArchive } = require(`./extractArchive`),
     log = require(`./logging`),
     { FunctionConfiguration } = require(`./tasks/lambda/lambda`),
-    { WriteRemainingTasks } = require(`./writeToS3`);
+    { WriteExtractedArchiveToS3, WriteRemainingTasks } = require(`./writeToS3`);
 
 function initialize(evtData, context, localRoot, extractionLocation) {
-    let awsRegion = null,
-        awsAccountId = null;
+    let s3Source = evtData.Records[0].s3,
+        awsRegion = null,
+        awsAccountId = null,
+        functionTimeout = null,
+        startTime = DateTime.utc();
 
     // Get the configuration for this Lambda function
     return FunctionConfiguration(context.functionName)
         .then(thisFunctionConfiguration => {
+            functionTimeout = thisFunctionConfiguration.Timeout;
+
             // Parse the current region, and account ID, from this function's ARN
             let arnParts = thisFunctionConfiguration.FunctionArn.split(`:`);
             awsRegion = arnParts[3];
@@ -23,7 +28,7 @@ function initialize(evtData, context, localRoot, extractionLocation) {
         })
         // Remove temporary files
         .then(() => CleanTemporaryRoot(localRoot))
-        .then(() => ExtractArchive(evtData.Records[0].s3, extractionLocation))
+        .then(() => ExtractArchive(s3Source, extractionLocation))
         .then(() => loadConfiguration(extractionLocation))
         .then(configuration => sortConfigurationTasks(configuration))
         .then(configuration => filterTasksByIncludeOrExcludeConfiguration(configuration))
@@ -32,11 +37,17 @@ function initialize(evtData, context, localRoot, extractionLocation) {
             configuration.index = 0;
             configuration.awsRegion = awsRegion;
             configuration.awsAccountId = awsAccountId;
-            configuration.startTime = DateTime.utc();
+            configuration.startTime = startTime;
+            configuration.functionTimeout = functionTimeout;
 
             return configuration;
         })
-        // Write the initial task file
+        // Write the extracted archive to S3
+        .then(configuration => {
+            return WriteExtractedArchiveToS3(s3Source, extractionLocation, startTime)
+                .then(() => { return configuration; });
+        })
+        // Write the initial task file to S3
         .then(configuration => WriteRemainingTasks(configuration, evtData));
 }
 

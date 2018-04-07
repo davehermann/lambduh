@@ -3,7 +3,7 @@
 const aws = require(`aws-sdk`),
     { DateTime } = require(`luxon`),
     { Trace, Warn } = require(`../logging`),
-    { RemoveProcessingFiles } = require(`../writeToS3`);
+    { RemoveProcessingFiles, WriteRemainingTasks } = require(`../writeToS3`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
@@ -18,7 +18,7 @@ function processNextFile(evtData, localRoot, extractionLocation) {
 
             return configuration;
         })
-        .then(configuration => nextTask(configuration, s3Source));
+        .then(configuration => nextTask(configuration, s3Source, extractionLocation));
 }
 
 function loadFile(Bucket, Key) {
@@ -32,9 +32,27 @@ function loadFile(Bucket, Key) {
         });
 }
 
-function nextTask(configuration, s3Source) {
+function nextTask(configuration, s3Source, extractionLocation) {
     if (configuration.remainingTasks.tasks.length > 0) {
+        let currentTask = configuration.remainingTasks.tasks[0],
+            runningTask = Promise.resolve();
 
+        switch (currentTask.type.toLowerCase()) {
+            // case `s3`:
+            //     runningTask = S3Task(currentTask, extractionLocation);
+            //     break;
+
+            default:
+                runningTask = runningTask
+                    .then(() => {
+                        configuration.remainingTasks.tasks.shift();
+                    });
+        }
+
+        runningTask = runningTask
+            .then(() => WriteRemainingTasks(configuration.remainingTasks, configuration.originalSource));
+
+        return runningTask;
     } else
         return RemoveProcessingFiles(s3Source, configuration.remainingTasks);
 }

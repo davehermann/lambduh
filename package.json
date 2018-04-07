@@ -8,6 +8,8 @@
   "dependencies": {
     "fs-extra": "^5.0.0",
     "luxon": "^1.0.0",
-    "tar": "^4.4.1"
+    "mime-types": "^2.1.18",
+    "tar": "^4.4.1",
+    "uuid": "^3.2.1"
   }
 }

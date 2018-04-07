@@ -7,8 +7,8 @@ const path = require(`path`),
 
 global.logLevel = process.env.log || `warn`;
 
-const localRoot = `/tmp/deployment`;
-const extractionLocation = `${localRoot}/extract`;
+const localRoot = path.join(`/tmp`, `deployment`);
+const extractionLocation = path.join(localRoot, `extract`);
 
 module.exports.lambda = (evtData, context) => {
     log.Trace(evtData, true);
