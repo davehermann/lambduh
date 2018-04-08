@@ -34,7 +34,7 @@ function initialize(evtData, context, localRoot, extractionLocation) {
         .then(configuration => filterTasksByIncludeOrExcludeConfiguration(configuration))
         .then(configuration => {
             // Add data to be tracked as part of the continuing tasks
-            configuration.index = 0;
+            configuration.index = -1;
             configuration.awsRegion = awsRegion;
             configuration.awsAccountId = awsAccountId;
             configuration.startTime = startTime;

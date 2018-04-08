@@ -57,6 +57,9 @@ function removeFiles(Bucket, remainingFiles) {
 function writeRemainingTasks(remainingTasks, originalSource) {
     Debug(`Writing remaining tasks to S3 for next run of this service`);
 
+    // Increment the index
+    remainingTasks.index++;
+
     // Set the timestamp to its integer value
     remainingTasks.startTime = remainingTasks.startTime.valueOf();
 
