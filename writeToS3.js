@@ -92,7 +92,7 @@ function writeSystemFilesToS3(s3Source, extractionLocation, startTime, remaining
             .then(fileContents => {
                 let objectParams = {
                     Bucket: s3Source.bucket.name,
-                    Key: `${startTime}/archive/${nextFile.replace(`${extractionLocation}/`, ``)}`,
+                    Key: `${archivePath(startTime)}/${nextFile.replace(`${extractionLocation}/`, ``)}`,
                     Body: fileContents
                 };
 
@@ -107,8 +107,13 @@ function writeSystemFilesToS3(s3Source, extractionLocation, startTime, remaining
         return Promise.resolve();
 }
 
+function archivePath(startTime) {
+    return `${startTime}/archive`;
+}
+
 module.exports.ListFilesInBucket = listFilesForArchiveProcessing;
 module.exports.RemoveProcessingFiles = removeProcessingFiles;
 module.exports.RemoveFiles = removeFiles;
 module.exports.WriteRemainingTasks = writeRemainingTasks;
 module.exports.WriteExtractedArchiveToS3 = writeArchive;
+module.exports.GetPathForArchive = archivePath;

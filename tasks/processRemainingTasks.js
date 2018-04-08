@@ -3,6 +3,7 @@
 const aws = require(`aws-sdk`),
     { DateTime } = require(`luxon`),
     { Trace, Warn } = require(`../logging`),
+    { S3Task } = require(`./s3/s3`),
     { RemoveProcessingFiles, WriteRemainingTasks } = require(`../writeToS3`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
@@ -38,9 +39,10 @@ function nextTask(configuration, s3Source, extractionLocation) {
             runningTask = Promise.resolve();
 
         switch (currentTask.type.toLowerCase()) {
-            // case `s3`:
-            //     runningTask = S3Task(currentTask, extractionLocation);
-            //     break;
+            case `s3`:
+                runningTask = S3Task(currentTask, configuration.remainingTasks, s3Source)
+                    .then(() => { configuration.remainingTasks.tasks.shift(); });
+                break;
 
             default:
                 runningTask = runningTask
