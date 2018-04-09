@@ -22,9 +22,10 @@ function cleanTemporaryRoot(localRoot) {
         })
         .catch(err => {
             // If the directory does not exist, fs.stat throws and error and we can continue
-            if (err.message.search(/no such file or directory/g) >= 0)
+            if (err.message.search(/no such file or directory/g) >= 0) {
+                log.Trace(`${localRoot} does not exist`);
                 return null;
-            else
+            } else
                 // Throw any other errors
                 return Promise.reject(err);
         });

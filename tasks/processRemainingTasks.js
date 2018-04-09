@@ -3,6 +3,7 @@
 const aws = require(`aws-sdk`),
     { DateTime } = require(`luxon`),
     { Trace, Warn } = require(`../logging`),
+    { LambdaTask } = require(`./lambda/lambda`),
     { S3Task } = require(`./s3/s3`),
     { RemoveProcessingFiles, WriteRemainingTasks } = require(`../writeToS3`);
 
@@ -19,7 +20,7 @@ function processNextFile(evtData, localRoot, extractionLocation) {
 
             return configuration;
         })
-        .then(configuration => nextTask(configuration, s3Source, extractionLocation));
+        .then(configuration => nextTask(configuration, s3Source, localRoot, extractionLocation));
 }
 
 function loadFile(Bucket, Key) {
@@ -33,25 +34,28 @@ function loadFile(Bucket, Key) {
         });
 }
 
-function nextTask(configuration, s3Source, extractionLocation) {
+function nextTask(configuration, s3Source, localRoot, extractionLocation) {
     if (configuration.remainingTasks.tasks.length > 0) {
         let currentTask = configuration.remainingTasks.tasks[0],
-            runningTask = Promise.resolve();
+            runningTask = Promise.resolve(true);
 
         switch (currentTask.type.toLowerCase()) {
-            case `s3`:
-                runningTask = S3Task(currentTask, configuration.remainingTasks, s3Source)
-                    .then(() => { configuration.remainingTasks.tasks.shift(); });
+            case `lambda`:
+                runningTask = LambdaTask(currentTask, configuration.remainingTasks, s3Source, localRoot)
+                    .then(() => { return (currentTask.functions.length == 0); });
                 break;
 
-            default:
-                runningTask = runningTask
-                    .then(() => {
-                        configuration.remainingTasks.tasks.shift();
-                    });
+            case `s3`:
+                runningTask = S3Task(currentTask, configuration.remainingTasks, s3Source)
+                    .then(() => { return true; });
+                break;
         }
 
         runningTask = runningTask
+            .then(moveToNextTask => {
+                if (moveToNextTask)
+                    configuration.remainingTasks.tasks.shift();
+            })
             .then(() => WriteRemainingTasks(configuration.remainingTasks, configuration.originalSource));
 
         return runningTask;
