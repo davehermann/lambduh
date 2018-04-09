@@ -57,7 +57,7 @@ function loadConfiguration(extractionLocation) {
         .then(configurationFileContents => {
             if (!!configurationFileContents) {
                 let configuration = JSON.parse(configurationFileContents);
-                log.Debug({ "Loaded Configuration": configuration }, true);
+                log.Dev({ "Loaded Configuration": configuration }, true);
                 return configuration;
             } else
                 return Promise.reject(`No configuration file found in either extracted source or function root`);
@@ -95,7 +95,7 @@ function sortConfigurationTasks(configuration) {
     // Remove the ordinal property
     configuration.tasks.forEach((task) => { delete task.initialTaskOrder; });
 
-    log.Trace({ "Re-ordered Configuration": configuration }, true);
+    log.Dev({ "Re-ordered Configuration": configuration }, true);
 
     return Promise.resolve(configuration);
 }
@@ -180,7 +180,7 @@ function filterTasksByIncludeOrExcludeConfiguration(configuration) {
         return include;
     });
 
-    log.Trace({ "Filtered Configuration": configuration }, true);
+    log.Debug({ "Filtered Configuration": configuration }, true);
 
     return Promise.resolve(configuration);
 }

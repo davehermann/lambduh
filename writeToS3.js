@@ -79,7 +79,7 @@ function writeRemainingTasks(remainingTasks, originalSource) {
 function writeArchive(s3Source, extractionLocation, startTime) {
     return ReadDirectoryContents(extractionLocation)
         .then(foundFiles => {
-            Debug({ "Extracted Archive": foundFiles }, true);
+            Trace({ "Extracted Archive": foundFiles }, true);
             Debug(`Writing archive to S3`);
             return foundFiles;
         })

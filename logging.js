@@ -1,6 +1,7 @@
 "use strict";
 
 const levels = Object.freeze({
+    dev: 0,
     trace: 10,
     debug: 20,
     info: 30,
@@ -19,6 +20,10 @@ function writeLog(data, asJSON, level) {
 }
 
 module.exports.Log = writeLog;
+
+module.exports.Dev = (data, asJSON) => {
+    writeLog(data, asJSON, `Dev`);
+};
 
 module.exports.Trace = (data, asJSON) => {
     writeLog(data, asJSON, `Trace`);
