@@ -4,6 +4,7 @@ const aws = require(`aws-sdk`),
     fs = require(`fs-extra`),
     path = require(`path`),
     { ConfigureNPM } = require(`./npm`),
+    { GenerateZip } = require(`./zip`),
     { CleanTemporaryRoot } = require(`../../extractArchive`),
     { Dev, Trace, Debug, Info } = require(`../../logging`),
     { GetPathForArchive } = require(`../../writeToS3`);
@@ -11,10 +12,10 @@ const aws = require(`aws-sdk`),
 const lambda = new aws.Lambda({ apiVersion: `2015-03-31` });
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
-function functionConfiguration(functionName) {
+function getFunctionConfiguration(functionName) {
     return lambda.getFunctionConfiguration({ FunctionName: functionName }).promise()
         .then(configuration => {
-            Dev({ "This Lambda function's configuration": configuration }, true);
+            Dev({ [`Existing ${functionName} configuration`]: configuration }, true);
 
             return configuration;
         });
@@ -42,7 +43,9 @@ function deployFunction(task, remainingTasks, s3Source, localRoot) {
     return CleanTemporaryRoot(localRoot)
         .then(() => { Debug(`Walk the code, and copy all requires`); })
         .then(() => prepareCodeFiles(codeLocation, s3Source, remainingTasks.startTime.valueOf(), [nextFunction.source]))
-        .then(npmRequires => ConfigureNPM(task, localRoot, codeLocation, s3Source, remainingTasks.startTime.valueOf(), nextFunction.source, npmRequires));
+        .then(npmRequires => ConfigureNPM(task, localRoot, codeLocation, s3Source, remainingTasks.startTime.valueOf(), nextFunction.source, npmRequires))
+        .then(() => GenerateZip(codeLocation, functionName, task))
+        .then(zipAsBuffer => updateFunctionInLambda(zipAsBuffer, nextFunction, functionName, task));
 }
 
 function prepareCodeFiles(codeLocation, s3Source, startTime, filesToProcess, npmRequires, writtenPaths) {
@@ -131,6 +134,65 @@ function prepareCodeFiles(codeLocation, s3Source, startTime, filesToProcess, npm
         return Promise.resolve(npmRequires);
 }
 
-module.exports.FunctionConfiguration = functionConfiguration;
+function updateFunctionInLambda(zipAsBuffer, nextFunction, functionName, task) {
+    Debug(`Update the function within AWS Lambda`);
+
+    let taskDefaults = task.default || {};
+
+    let useRole = nextFunction.iamRoleArn || taskDefaults.iamRoleArn;
+
+    let useHandler = nextFunction.handler || taskDefaults.handler || `handler`;
+
+    let functionConfiguration = {
+        FunctionName: functionName,
+        Role: useRole,
+        Handler: `${functionName}${path.join(path.dirname(nextFunction.source), path.basename(nextFunction.source, path.extname(nextFunction.source)))}.${useHandler}`,
+        MemorySize: nextFunction.memorySize || taskDefaults.memorySize || 128,
+        Timeout: nextFunction.timeout || taskDefaults.timeout || 5,
+        Runtime: nextFunction.runtime || taskDefaults.runtime
+    };
+
+    if (!functionConfiguration.Role)
+        return Promise.reject(`${functionName} does not define an IAM role`);
+    if (!functionConfiguration.Runtime)
+        return Promise.reject(`${functionName} does not define a runtime`);
+
+    return getFunctionConfiguration(functionName)
+        .catch(err => {
+            if (err.errorType == `ResourceNotFoundException`)
+                return null;
+        })
+        .then(existingConfiguration => {
+            if (!existingConfiguration) {
+                Debug(`${functionName} does not exist.  Adding as new function.`);
+                Trace({ "New configuration": functionConfiguration }, true);
+
+                functionConfiguration.Code = { ZipFile: zipAsBuffer };
+
+                return lambda.createFunction(functionConfiguration).promise()
+                    .then(() => { Trace(`Function created`); });
+            } else {
+                Debug(`${functionName} already exists.  Updating function configuration.`);
+
+                // Add an empty VPC configuration to avoid an InvalidParameterValueException: (SubnetIds and SecurityIds must coexist or be both empty list.)
+                functionConfiguration.VpcConfig = {
+                    SubnetIds: [],
+                    SecurityGroupIds: []
+                };
+
+                Trace({ "New configuration": functionConfiguration }, true);
+
+                return lambda.updateFunctionConfiguration(functionConfiguration).promise()
+                    .then(() => {
+                        Debug(`Configuration updated.  Updating function code.`);
+
+                        return lambda.updateFunctionCode({ FunctionName: functionName, ZipFile: zipAsBuffer });
+                    })
+                    .then(() => { Debug(`Code updated`); });
+            }
+        });
+}
+
+module.exports.FunctionConfiguration = getFunctionConfiguration;
 module.exports.LambdaTask = lambdaTask;
 module.exports.GetDeployedName = generateFunctionName;
