@@ -3,6 +3,7 @@
 const aws = require(`aws-sdk`),
     { DateTime } = require(`luxon`),
     { Trace, Warn } = require(`../logging`),
+    { APIGatewayTask } = require(`./apiGateway/apiGateway`),
     { LambdaTask } = require(`./lambda/lambda`),
     { S3Task } = require(`./s3/s3`),
     { RemoveProcessingFiles, WriteRemainingTasks } = require(`../writeToS3`);
@@ -40,6 +41,11 @@ function nextTask(configuration, s3Source, localRoot, extractionLocation) {
             runningTask = Promise.resolve(true);
 
         switch (currentTask.type.toLowerCase()) {
+            case `apigateway`:
+                runningTask = APIGatewayTask(currentTask, configuration.remainingTasks)
+                    .then(() => { return (!currentTask.aliasNonEndpoints || (currentTask.aliasNonEndpoints.length == 0)) && (!currentTask.endpoints || (currentTask.endpoints.length == 0)); });
+                break;
+
             case `lambda`:
                 runningTask = LambdaTask(currentTask, configuration.remainingTasks, s3Source, localRoot)
                     .then(() => { return (currentTask.functions.length == 0); });
