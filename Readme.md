@@ -130,6 +130,7 @@ JSON configuration and detailed description:
         "disabled": false,
         "type": "ApiGateway",
         "stage": "nameYourStage",
+        "stageVersionLimits": { "keep": 2, "expirationHours": 6 },
         "cors": { "origin": "*" },
         "endpoints": [
             { "path": "/request/path/from/root/{optionalParameters}", "method": "GET", "functionName": "nameYourFunction", "headers": [{ "name": "headerName", "parameterName": "headerSentToLambda" }], "parameters": [{ "name":"query", "parameterName": "queryStringSentToLambda"}], "endpointConfiguration": { "routeProp": "value", "routeArray": ["arr1", "arr2"] } }
@@ -157,7 +158,7 @@ JSON configuration and detailed description:
                     + **Always** includes the IP and User Agent string
             + Add a 200 response to the integration response
             + Add a 200 response to the method response
-            + Creates a Lambda **function version** with a tag `nameYourStage`
+            + Creates a Lambda **function version** with a `nameYourStage`
             + Integrates with Lambda function *ld_SomeGoodName_nameYourFunction:nameYourStage*
                 + Add the IAM permission necessary to run *ld_SomeGoodName_nameYourFunction:nameYourStage* in Lambda from this method in API Gateway
         + Create an OPTIONS method for `/request/path/from/root/{optionalParameters}`

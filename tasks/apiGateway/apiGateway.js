@@ -2,6 +2,7 @@
 
 const aws = require(`aws-sdk`),
     { VersionAndAliasFunction } = require(`./lambdaIntegration/versioningAndAliases`),
+    { ConfigureResource } = require(`./apiResources/configureResource`),
     { Trace, Debug, Info } = require(`../../logging`);
 
 const apiGateway = new aws.APIGateway({ apiVersion: `2015-07-09` });
@@ -71,7 +72,7 @@ function processNextNonEndpoint(task, remainingTasks) {
 function processNextEndpoint(task, remainingTasks) {
     let serviceDefinition = task.endpoints.shift();
 
-    return Promise.resolve();
+    return ConfigureResource(serviceDefinition, task, remainingTasks);
 }
 
 module.exports.APIGatewayTask = apiGatewayTask;

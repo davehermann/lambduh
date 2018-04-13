@@ -8,6 +8,8 @@ const aws = require(`aws-sdk`),
 const lambda = new aws.Lambda({ apiVersion: `2015-03-31` });
 
 function versionAndAliasFunction(serviceDefinition, task, remainingTasks) {
+    Trace(`Version and alias ${serviceDefinition.functionName}`);
+
     // Get the function configuration
     return FunctionConfiguration(GetDeployedName(remainingTasks, serviceDefinition.functionName))
         // Get the ARN for the non-versioned function
@@ -21,7 +23,7 @@ function versionAndAliasFunction(serviceDefinition, task, remainingTasks) {
         // Drop matching older aliases
         .then(versioning => dropOldAliases(versioning, task, remainingTasks))
         // Delete function versions that do not have aliases
-        .then(versioning => removeUnusedVersions(versioning.functionArn));
+        .then(versioning => removeUnusedVersions(versioning));
 }
 
 function createVersion(versioning) {
@@ -144,14 +146,14 @@ function deleteAliases(aliasList, FunctionName) {
         return Promise.resolve();
 }
 
-function removeUnusedVersions(functionArn) {
-    return getVersions(functionArn)
+function removeUnusedVersions(versioning) {
+    return getVersions(versioning.functionArn)
         .then(foundVersions => {
-            Debug(`Found ${foundVersions.length} versions of ${functionArn}`);
+            Debug(`Found ${foundVersions.length} versions of ${versioning.functionArn}`);
             Trace({ "Found versions": foundVersions }, true);
 
-            return getAliases({ functionArn })
-                .then(versioning => { return { functionArn, foundVersions, foundAliases: versioning.existingAliases }; });
+            return getAliases({ functionArn: versioning.functionArn })
+                .then(removalVersioning => { return { functionArn: removalVersioning.functionArn, foundVersions, foundAliases: removalVersioning.existingAliases }; });
         })
         .then(removalConfiguration => {
             Trace({ removalConfiguration }, true);
@@ -163,7 +165,8 @@ function removeUnusedVersions(functionArn) {
 
             return versionsToDelete;
         })
-        .then(versionsToDelete => deleteVersions(functionArn, versionsToDelete));
+        .then(versionsToDelete => deleteVersions(versioning.functionArn, versionsToDelete))
+        .then(() => { return versioning; });
 }
 
 function getVersions(functionArn, foundVersions, Marker) {
