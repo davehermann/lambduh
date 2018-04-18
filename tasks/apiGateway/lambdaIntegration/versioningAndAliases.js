@@ -58,12 +58,16 @@ function getAliases(versioning, Marker) {
     }
 }
 
-function enableNewAlias(versioning, task) {
-    return createOrUpdateAlias(task.versionId, versioning)
-        .then(versioning => {
-            // If versioning the release, also update the non-versioned stage alias
-            return (task.versionId !== task.deployment.stage) ? createOrUpdateAlias(task.deployment.stage, versioning) : Promise.resolve(versioning);
-        });
+function enableNewAlias(versioning, task, remainingAliases) {
+    // Create or move each alias defined for the task
+    if (!remainingAliases)
+        remainingAliases = task.versionAliases.filter(() => { return true; });
+
+    if (remainingAliases.length > 0)
+        return createOrUpdateAlias(remainingAliases.shift(), versioning)
+            .then(versioning => enableNewAlias(versioning, task, remainingAliases));
+    else
+        return Promise.resolve(versioning);
 }
 
 function createOrUpdateAlias(newAliasName, versioning) {

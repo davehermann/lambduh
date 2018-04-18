@@ -117,7 +117,7 @@ function setIntegrationRequestToLambdaFunctionWithPredefinedTemplate(endpointDef
     Debug(`Add integration request to Lambda Function via a template`);
     Dev({ endpointDefinition, methodResource, versioning, integrationParameters }, true);
 
-    let lambdaAliasArn = versioning.newAliases.filter(alias => { return alias.Name == task.versionId; }).map(alias => { return alias.AliasArn; })[0],
+    let lambdaAliasArn = versioning.newAliases.filter(alias => { return alias.Name == task.versionAliases[0]; }).map(alias => { return alias.AliasArn; })[0],
         versionUri = generateVersionUri(remainingTasks.awsRegion, lambdaAliasArn);
 
     let newIntegration = {

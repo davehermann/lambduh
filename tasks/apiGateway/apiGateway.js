@@ -19,7 +19,9 @@ function apiGatewayTask(task, remainingTasks) {
             // Store the API ID in the task data, along with a unique version ID
             .then(apiId => {
                 task.apiId = apiId;
-                task.versionId = task.deployment.production ? `${task.deployment.stage}_${remainingTasks.startTime.toFormat(`yyyyLLddHHmmss`)}` : task.deployment.stage;
+                task.versionAliases = [task.deployment.stage];
+                if (task.deployment.production)
+                    task.versionAliases.push(`${task.deployment.stage}_${remainingTasks.startTime.toFormat(`yyyyLLddHHmmss`)}`);
             })
             .then(() => { return false; });
     else if ((!!task.aliasNonEndpoints && (task.aliasNonEndpoints.length > 0)) || (!!task.endpoints && (task.endpoints.length > 0)))
@@ -82,7 +84,8 @@ function processNextEndpoint(task, remainingTasks) {
 }
 
 function configureStages(task, remainingTasks) {
-    return DeployStage(task.versionId, task, remainingTasks);
+    // return DeployStage(task.versionId, task, remainingTasks);
+    return Promise.resolve();
 }
 
 module.exports.APIGatewayTask = apiGatewayTask;
