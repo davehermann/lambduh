@@ -155,9 +155,9 @@ function updateFunctionInLambda(zipAsBuffer, nextFunction, functionName, task) {
     };
 
     if (!functionConfiguration.Role)
-        return Promise.reject(`${functionName} does not define an IAM role`);
+        return Promise.reject(new Error(`${functionName} does not define an IAM role`));
     if (!functionConfiguration.Runtime)
-        return Promise.reject(`${functionName} does not define a runtime`);
+        return Promise.reject(new Error(`${functionName} does not define a runtime`));
 
     return getFunctionConfiguration(functionName)
         .catch(err => {

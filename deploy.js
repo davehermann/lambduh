@@ -3,6 +3,7 @@
 const path = require(`path`),
     { Initialize } = require(`./initialize`),
     log = require(`./logging`),
+    { ErrorNotification } = require(`./notifications`),
     { NextSteps } = require(`./tasks/processRemainingTasks`);
 
 global.logLevel = process.env.log || `warn`;
@@ -18,7 +19,8 @@ module.exports.lambda = (evtData, context) => {
         .catch(err => {
             log.Error(err);
 
-            return Promise.reject(err);
+            return ErrorNotification(err)
+                .then(() => Promise.reject(err));
         });
 };
 

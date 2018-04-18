@@ -51,7 +51,7 @@ function createOrRetrieveResources(pathParts, restApiId, existingResources, pare
         Dev({ subPath, resourceChildren, subPathResource }, true);
 
         if (subPathResource.length > 1)
-            return Promise.reject(`${subPathResource.length} child resources found for ${parentResource.path}`);
+            return Promise.reject(new Error(`${subPathResource.length} child resources found for ${parentResource.path}`));
 
         return ((subPathResource.length == 1) ? Promise.resolve(subPathResource[0]) : createResource(restApiId, subPath, parentResource.id))
             .then(newResource => {

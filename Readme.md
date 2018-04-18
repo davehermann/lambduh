@@ -28,6 +28,8 @@
 While v2.0.0 represents a total rewrite of the codebase from scratch, every effort has been made to maintain a nearly identical JSON configuration format.
 Any breaking changes are below.
 
+1. Configuration files must be included in the triggering archive.
+Lamb-duh no longer supports using a default configuration.
 1. *IAM Roles*
     + the *s3:ListBucket* permission is now required for the bucket where the code archive is placed to start the deployment process
     + The *lambda:DeleteAlias* permission is now required

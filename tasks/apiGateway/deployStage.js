@@ -120,7 +120,7 @@ function setMethodIntegrationForDeployment(methodAliases, methodDetails, resourc
         .then(() => {
             // If no matching alias exists, throw an error as the release intent is unknown
             if (neededAlias.length == 0)
-                return Promise.reject(`No alias ${stageName} exists for ${noVersionArn}.`);
+                return Promise.reject(new Error(`No alias ${stageName} exists for ${noVersionArn}.`));
         })
         .then(() => {
             Trace({ neededAlias, httpMethod: methodDetails.httpMethod, resource, stageName, noVersionArn }, true);

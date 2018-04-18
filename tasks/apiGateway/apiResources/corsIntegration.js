@@ -13,7 +13,7 @@ function addCorsMethod(endpointDefinition, task, methodResourceIntegration) {
         Debug(`No CORS definition on task`);
         return Promise.resolve();
     } else if (!task.cors.origin)
-        return Promise.reject(`CORS configuration must define "origin". Use "*" for all origins`);
+        return Promise.reject(new Error(`CORS configuration must define "origin". Use "*" for all origins`));
     else {
         // Create OPTIONS method
         return AddMethod({ method: `OPTIONS` }, methodResourceIntegration.resource, task.apiId)

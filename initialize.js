@@ -4,7 +4,7 @@ const { DateTime } = require(`luxon`),
     fs = require(`fs-extra`),
     { CleanTemporaryRoot, ExtractArchive } = require(`./extractArchive`),
     log = require(`./logging`),
-    { StartupNotification } = require(`./notifications`),
+    { SetNotificationConfiguration, StartupNotification } = require(`./notifications`),
     { FunctionConfiguration } = require(`./tasks/lambda/lambda`),
     { WriteExtractedArchiveToS3, WriteRemainingTasks } = require(`./writeToS3`);
 
@@ -46,7 +46,9 @@ function initialize(evtData, context, localRoot, extractionLocation) {
             return configuration;
         })
         .then(configuration => {
-            return StartupNotification(configuration)
+            SetNotificationConfiguration(configuration);
+
+            return StartupNotification()
                 .then(() => { return configuration; });
         })
         // Write the extracted archive to S3
@@ -62,12 +64,15 @@ function loadConfiguration(extractionLocation) {
     // Read ~/lamb_duh.json from the extracted files
     return fs.readFile(`${extractionLocation}/lamb_duh.json`, `utf8`)
         .then(configurationFileContents => {
-            if (!!configurationFileContents) {
-                let configuration = JSON.parse(configurationFileContents);
-                log.Dev({ "Loaded Configuration": configuration }, true);
-                return configuration;
-            } else
-                return Promise.reject(`No configuration file found in either extracted source or function root`);
+            let configuration = JSON.parse(configurationFileContents);
+            log.Dev({ "Loaded Configuration": configuration }, true);
+            return configuration;
+        })
+        .catch(err => {
+            if (err.code == `ENOENT`)
+                return Promise.reject(new Error(`No configuration file found in extracted source`));
+            else
+                return Promise.reject(err);
         });
 }
 

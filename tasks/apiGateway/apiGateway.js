@@ -11,7 +11,7 @@ const apiGateway = new aws.APIGateway({ apiVersion: `2015-07-09` });
 function apiGatewayTask(task, remainingTasks) {
     // Require a stage to be configured
     if (!task.deployment || !task.deployment.stage)
-        return Promise.reject(`All API Gateway tasks MUST have a deployment "stage" configured`);
+        return Promise.reject(new Error(`All API Gateway tasks MUST have a deployment "stage" configured`));
 
     if (!task.apiId)
         // Get the API ID for the application API
@@ -59,7 +59,7 @@ function getApiIdForApplicationName(applicationName) {
                 return apiGateway.createRestApi({ name: applicationName });
             // Error for everything else
             else
-                return Promise.reject(`More than one API matches the name ${applicationName.toLowerCase()}`);
+                return Promise.reject(new Error(`More than one API matches the name ${applicationName.toLowerCase()}`));
         })
         .then(api => {
             Debug({ "Use API": api }, true);
