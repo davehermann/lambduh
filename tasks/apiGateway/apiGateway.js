@@ -28,8 +28,9 @@ function apiGatewayTask(task, remainingTasks) {
         return processNextService(task, remainingTasks)
             .then(() => { return false; });
     else
-        return configureStages(task, remainingTasks)
-            .then(() => { return true; });
+        return DeployStage(task, remainingTasks)
+            // Deployment is complete when all stages are deployed
+            .then(() => { return task.stagesToDeploy.length == 0; });
 }
 
 function getApiIdForApplicationName(applicationName) {
@@ -81,11 +82,6 @@ function processNextEndpoint(task, remainingTasks) {
     let serviceDefinition = task.endpoints.shift();
 
     return ConfigureResource(serviceDefinition, task, remainingTasks);
-}
-
-function configureStages(task, remainingTasks) {
-    // return DeployStage(task.versionId, task, remainingTasks);
-    return Promise.resolve();
 }
 
 module.exports.APIGatewayTask = apiGatewayTask;

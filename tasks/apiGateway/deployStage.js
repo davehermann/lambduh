@@ -10,28 +10,28 @@ const aws = require(`aws-sdk`),
 
 const apiGateway = new aws.APIGateway({ apiVersion: `2015-07-09` });
 
-function deployStage(stageName, task, remainingTasks) {
-    let newDeployment = {
-        restApiId: task.apiId,
-        stageName
-    };
+function deployStage(task, remainingTasks) {
+    if (!task.stagesToDeploy)
+        return loadResourcesForApi(task);
+    else
+        return integrateNextResource(task, remainingTasks);
+}
 
-    Info(`Generating resources for deployment to ${stageName} API`);
-
+function loadResourcesForApi(task) {
     return GetResourcesForApi(task.apiId)
-        .then(apiResources => getResourceIntegration(apiResources, stageName, task, remainingTasks))
-        .then(() => {
-            Info({ "Deploying API": newDeployment }, true);
-            return apiGateway.createDeployment(newDeployment).promise();
+        .then(apiResources => {
+            task.stagesToDeploy = task.versionAliases.map(alias => { return { stageName: alias, resources: apiResources.filter(() => { return true; }) }; });
         });
 }
 
-function getResourceIntegration(resourceList, stageName, task, remainingTasks) {
-    if (resourceList.length > 0) {
-        Info(`${resourceList.length} remaining resources to check for ${stageName} integration`);
+function integrateNextResource(task, remainingTasks, fromResourceIntegration) {
+    let currentStage = task.stagesToDeploy[0];
 
-        let thisResource = resourceList.shift();
-        Dev({ thisResource }, true);
+    if (currentStage.resources.length > 0) {
+        Info(`${currentStage.resources.length} remaining resources to check for ${currentStage.stageName} integration`);
+
+        let thisResource = currentStage.resources.shift();
+        Trace({ thisResource }, true);
 
         // For each method on the resource, check for an integration
         let methodList = [];
@@ -39,10 +39,30 @@ function getResourceIntegration(resourceList, stageName, task, remainingTasks) {
             for (let methodName in thisResource.resourceMethods)
                 methodList.push(methodName);
 
-        return getMethods(methodList, stageName, thisResource, task, remainingTasks)
-            .then(() => getResourceIntegration(resourceList, stageName, task, remainingTasks));
-    } else
+        if (methodList.length > 0)
+            return getMethods(methodList, currentStage.stageName, thisResource, task, remainingTasks);
+        else
+            return integrateNextResource(task, remainingTasks, true);
+    } else if (fromResourceIntegration)
+        // If the last resource in the list does not have a method, ensure pushing to stage happens on the next iteration
         return Promise.resolve();
+    else
+        return pushDeployment(task);
+}
+
+function pushDeployment(task) {
+    let currentStage = task.stagesToDeploy.shift();
+
+    let newDeployment = {
+        restApiId: task.apiId,
+        stageName: currentStage.stageName
+    };
+
+    Info({ "Deploying API": newDeployment }, true);
+    return apiGateway.createDeployment(newDeployment).promise()
+        .then(() => {
+            Debug(`${newDeployment.stageName} deployed`);
+        });
 }
 
 function getMethods(methodList, stageName, resource, task, remainingTasks) {
