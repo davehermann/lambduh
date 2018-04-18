@@ -61,6 +61,14 @@ The down side is that you will have to fill in some IAM role permissions, but th
 
 ## Usage
 
+### Package <u>this</u> application
+1. Run `npm install` to pull in all dependencies
+1. Run `npm run build` to generate a zip archive (*Lambda Deployment Package.zip*) that you can upload to AWS Lambda
+1. Create a function in AWS Lambda, and upload the *zip archive* there
+1. Use a role for the function that includes all permissions outlined in **IAM Configuration** below
+
+### Include JSON configuration in <u>your</u> application
+
 JSON configuration and detailed description:
 
 ```

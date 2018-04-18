@@ -4,7 +4,7 @@ const aws = require(`aws-sdk`),
     fs = require(`fs-extra`),
     mime = require(`mime-types`),
     path = require(`path`),
-    { ReadDirectoryContents } = require(`./extractArchive`),
+    { ReadDirectoryContents } = require(`./scanDirectory`),
     { Trace, Debug } = require(`./logging`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
