@@ -66,7 +66,8 @@ function nextTask(configuration, s3Source, localRoot) {
 
         return runningTask;
     } else
-        return RemoveProcessingFiles(s3Source, configuration.remainingTasks);
+        return RemoveProcessingFiles(s3Source, configuration.remainingTasks)
+            .then(() => { Warn(`Application deployment complete`); });
 }
 
 module.exports.NextSteps = processNextFile;

@@ -14,6 +14,8 @@ function initialize(evtData, context, localRoot, extractionLocation) {
         functionTimeout = null,
         startTime = DateTime.utc();
 
+    log.Warn(`Lamb_duh deployment triggered via ${s3Source.object.key}`);
+
     // Get the configuration for this Lambda function
     return FunctionConfiguration(context.functionName)
         .then(thisFunctionConfiguration => {

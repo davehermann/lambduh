@@ -6,7 +6,7 @@ const aws = require(`aws-sdk`),
     { GetExistingIntegration, SetLambdaIntegrationFunction } = require(`./lambdaIntegration/methodIntegration`),
     { CreateOrUpdateAlias, GetAliases } = require(`./lambdaIntegration/versioningAndAliases`),
     { Throttle } = require(`./throttle`),
-    { Dev, Trace, Debug, Info } = require(`../../logging`);
+    { Dev, Trace, Debug, Info, Warn } = require(`../../logging`);
 
 const apiGateway = new aws.APIGateway({ apiVersion: `2015-07-09` });
 
@@ -58,10 +58,10 @@ function pushDeployment(task) {
         stageName: currentStage.stageName
     };
 
-    Info({ "Deploying API": newDeployment }, true);
+    Debug({ "Deploying API": newDeployment }, true);
     return apiGateway.createDeployment(newDeployment).promise()
         .then(() => {
-            Debug(`${newDeployment.stageName} deployed`);
+            Warn(`API deployed to stage: ${newDeployment.stageName}`);
         });
 }
 

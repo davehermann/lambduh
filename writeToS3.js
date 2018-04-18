@@ -5,12 +5,12 @@ const aws = require(`aws-sdk`),
     mime = require(`mime-types`),
     path = require(`path`),
     { ReadDirectoryContents } = require(`./scanDirectory`),
-    { Trace, Debug } = require(`./logging`);
+    { Trace, Debug, Warn } = require(`./logging`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
 function removeProcessingFiles(s3Source, remainingTasks) {
-    Debug(`Removing all files related to processing this archive`);
+    Warn(`Removing all files related to processing this archive`);
 
     return listFilesForArchiveProcessing(s3Source.bucket.name, remainingTasks.startTime.valueOf() + ``)
         .then(foundFiles => {
