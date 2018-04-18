@@ -22,7 +22,7 @@ function getAllExistingApiResources(restApiId, position, resources) {
             .then(gatewayPosition => getAllExistingApiResources(restApiId, gatewayPosition, resources));
     else {
         resources.sort((a, b) => { return a.path < b.path ? -1 : 1; });
-        Trace({ resources });
+        Trace({ resources }, true);
         return Promise.resolve(resources);
     }
 }

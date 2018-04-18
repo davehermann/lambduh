@@ -154,5 +154,23 @@ function addIntegrationRequest(newIntegration) {
         .then(gatewayData => Throttle(gatewayData));
 }
 
+function getIntegrationRequest(httpMethod, resourceId, restApiId) {
+    let request = {
+        httpMethod,
+        resourceId,
+        restApiId
+    };
+
+    Debug({ "Get integration request": request }, true);
+    return apiGateway.getIntegration(request).promise()
+        .then(gatewayData => Throttle(gatewayData))
+        .then(gatewayData => {
+            Trace({ "Integration request": gatewayData }, true);
+            return gatewayData;
+        });
+}
+
 module.exports.AddLambdaIntegration = addLambdaIntegrationRequest;
+module.exports.SetLambdaIntegrationFunction = setIntegrationRequestToLambdaFunctionWithPredefinedTemplate;
 module.exports.AddMockIntegration = addMockIntegrationRequest;
+module.exports.GetExistingIntegration = getIntegrationRequest;

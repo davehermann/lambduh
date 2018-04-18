@@ -1,6 +1,7 @@
 "use strict";
 
 const aws = require(`aws-sdk`),
+    { DeployStage } = require(`./deployStage`),
     { VersionAndAliasFunction } = require(`./lambdaIntegration/versioningAndAliases`),
     { ConfigureResource } = require(`./apiResources/configureResource`),
     { Trace, Debug, Info } = require(`../../logging`);
@@ -9,7 +10,7 @@ const apiGateway = new aws.APIGateway({ apiVersion: `2015-07-09` });
 
 function apiGatewayTask(task, remainingTasks) {
     // Require a stage to be configured
-    if (!task.stage)
+    if (!task.deployment || !task.deployment.stage)
         return Promise.reject(`All API Gateway tasks MUST have a deployment "stage" configured`);
 
     if (!task.apiId)
@@ -18,10 +19,15 @@ function apiGatewayTask(task, remainingTasks) {
             // Store the API ID in the task data, along with a unique version ID
             .then(apiId => {
                 task.apiId = apiId;
-                task.versionId = `${task.stage}_${remainingTasks.startTime.toFormat(`yyyyLLddHHmmss`)}`;
-            });
+                task.versionId = task.deployment.production ? `${task.deployment.stage}_${remainingTasks.startTime.toFormat(`yyyyLLddHHmmss`)}` : task.deployment.stage;
+            })
+            .then(() => { return false; });
+    else if ((!!task.aliasNonEndpoints && (task.aliasNonEndpoints.length > 0)) || (!!task.endpoints && (task.endpoints.length > 0)))
+        return processNextService(task, remainingTasks)
+            .then(() => { return false; });
     else
-        return processNextService(task, remainingTasks);
+        return configureStages(task, remainingTasks)
+            .then(() => { return true; });
 }
 
 function getApiIdForApplicationName(applicationName) {
@@ -73,6 +79,10 @@ function processNextEndpoint(task, remainingTasks) {
     let serviceDefinition = task.endpoints.shift();
 
     return ConfigureResource(serviceDefinition, task, remainingTasks);
+}
+
+function configureStages(task, remainingTasks) {
+    return DeployStage(task.versionId, task, remainingTasks);
 }
 
 module.exports.APIGatewayTask = apiGatewayTask;

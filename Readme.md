@@ -17,11 +17,11 @@
 + Complete, from-scratch rewrite of the codebase
 + **Lamb-duh** leverages AWS services even more to boost efficiency
 + Large deployments are considerably faster
-+ Deployments are now versioned (**on by default**), which allows for <u>not</u> breaking browser applications that may be cached.
++ Deployments are now versioned (**off by default**), which allows for <u>not</u> breaking browser applications that may be cached.
     + S3 deployments can have the endpoint string automatically updated
     + For local testing/manual updates: following deployment the log will contain the correct endpoint, and using the SNS notification will supply it via SNS.
-    + The number of saved aliases, and the amount of time before deletion, can be set via an `aliasHistory: {}` on the API Gateway task.
-        + See below for more details and how to turn the feature off
+    + The number of saved aliases can be controlled, both as total numbers and amount of time
+    + See below for more details and how to turn the feature off
 
 #### Breaking Changes
 While v2.0.0 represents a total rewrite of the codebase from scratch, every effort has been made to maintain a nearly identical JSON configuration format.
@@ -37,6 +37,7 @@ Any breaking changes are below.
 1. *API Gateway Tasks*
     + It's no longer possible to operate without a stage configured.
     As API Gateway integration is presumably for deployment, this *shouldn't* impact on production usage; however, it does break for anyone who previously ran without a stage configured.
+    + `task.stage` is now `task.deployment.stage`
 
 ## Yet another deployment tool?
 You're a developer.
@@ -129,8 +130,14 @@ JSON configuration and detailed description:
     {
         "disabled": false,
         "type": "ApiGateway",
-        "stage": "nameYourStage",
-        "stageVersionLimits": { "keep": 2, "expirationHours": 6 },
+        "deployment": {
+            "stage": "nameYourStage",
+            "production": true,
+            "versioningLimits": {
+                "keep": 2,
+                "expirationHours": 6
+            },
+        },
         "cors": { "origin": "*" },
         "endpoints": [
             { "path": "/request/path/from/root/{optionalParameters}", "method": "GET", "functionName": "nameYourFunction", "headers": [{ "name": "headerName", "parameterName": "headerSentToLambda" }], "parameters": [{ "name":"query", "parameterName": "queryStringSentToLambda"}], "endpointConfiguration": { "routeProp": "value", "routeArray": ["arr1", "arr2"] } }

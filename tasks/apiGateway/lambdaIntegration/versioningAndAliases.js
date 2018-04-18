@@ -60,7 +60,10 @@ function getAliases(versioning, Marker) {
 
 function enableNewAlias(versioning, task) {
     return createOrUpdateAlias(task.versionId, versioning)
-        .then(versioning => createOrUpdateAlias(task.stage, versioning));
+        .then(versioning => {
+            // If versioning the release, also update the non-versioned stage alias
+            return (task.versionId !== task.deployment.stage) ? createOrUpdateAlias(task.deployment.stage, versioning) : Promise.resolve(versioning);
+        });
 }
 
 function createOrUpdateAlias(newAliasName, versioning) {
@@ -90,7 +93,7 @@ function createOrUpdateAlias(newAliasName, versioning) {
 
 function dropOldAliases(versioning, task, remainingTasks) {
     // Get the existing aliases matching this stage only
-    let stageAliases = versioning.existingAliases.filter(alias => { return alias.Name.indexOf(task.stage) == 0; });
+    let stageAliases = versioning.existingAliases.filter(alias => { return alias.Name.indexOf(task.deployment.stage) == 0; });
 
     Trace({ stageAliases }, true);
 
@@ -106,12 +109,12 @@ function dropOldAliases(versioning, task, remainingTasks) {
 
     Trace({ "Possible aliases to drop": possibleAliasesToDrop }, true);
 
-    let versionsToKeep = 3,
-        minimumHoursBeforeDeletion = 12;
+    let versionsToKeep = task.deployment.production ? 3 : 0,
+        minimumHoursBeforeDeletion = task.deployment.production ? 12 : 0;
 
-    if (!!task.stageVersionLimits) {
-        versionsToKeep = task.stageVersionLimits.keep || versionsToKeep;
-        minimumHoursBeforeDeletion = task.stageVersionLimits.expirationHours || minimumHoursBeforeDeletion;
+    if (task.deployment.production && !!task.deployment.versioningLimits) {
+        versionsToKeep = task.deployment.versioningLimits.keep || versionsToKeep;
+        minimumHoursBeforeDeletion = task.deployment.versioningLimits.expirationHours || minimumHoursBeforeDeletion;
     }
 
     let oldestToKeep = remainingTasks.startTime.minus({ hours: minimumHoursBeforeDeletion });
@@ -198,3 +201,4 @@ function deleteVersions(functionArn, versionList) {
 }
 
 module.exports.VersionAndAliasFunction = versionAndAliasFunction;
+module.exports.GetAliases = getAliases;

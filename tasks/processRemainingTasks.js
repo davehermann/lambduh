@@ -42,8 +42,8 @@ function nextTask(configuration, s3Source, localRoot, extractionLocation) {
 
         switch (currentTask.type.toLowerCase()) {
             case `apigateway`:
-                runningTask = APIGatewayTask(currentTask, configuration.remainingTasks)
-                    .then(() => { return (!currentTask.aliasNonEndpoints || (currentTask.aliasNonEndpoints.length == 0)) && (!currentTask.endpoints || (currentTask.endpoints.length == 0)); });
+                // API Gateway task determines its own completion status
+                runningTask = APIGatewayTask(currentTask, configuration.remainingTasks);
                 break;
 
             case `lambda`:
