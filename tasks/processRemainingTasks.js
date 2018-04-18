@@ -2,10 +2,11 @@
 
 const aws = require(`aws-sdk`),
     { DateTime } = require(`luxon`),
-    { Trace, Warn } = require(`../logging`),
     { APIGatewayTask } = require(`./apiGateway/apiGateway`),
     { LambdaTask } = require(`./lambda/lambda`),
     { S3Task } = require(`./s3/s3`),
+    { Trace, Warn } = require(`../logging`),
+    { CompletionNotification } = require(`../notifications`),
     { RemoveProcessingFiles, WriteRemainingTasks } = require(`../writeToS3`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
@@ -67,6 +68,7 @@ function nextTask(configuration, s3Source, localRoot) {
         return runningTask;
     } else
         return RemoveProcessingFiles(s3Source, configuration.remainingTasks)
+            .then(() => CompletionNotification(configuration.remainingTasks))
             .then(() => { Warn(`Application deployment complete`); });
 }
 

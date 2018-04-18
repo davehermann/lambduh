@@ -4,6 +4,7 @@ const { DateTime } = require(`luxon`),
     fs = require(`fs-extra`),
     { CleanTemporaryRoot, ExtractArchive } = require(`./extractArchive`),
     log = require(`./logging`),
+    { StartupNotification } = require(`./notifications`),
     { FunctionConfiguration } = require(`./tasks/lambda/lambda`),
     { WriteExtractedArchiveToS3, WriteRemainingTasks } = require(`./writeToS3`);
 
@@ -43,6 +44,10 @@ function initialize(evtData, context, localRoot, extractionLocation) {
             configuration.functionTimeout = functionTimeout;
 
             return configuration;
+        })
+        .then(configuration => {
+            return StartupNotification(configuration)
+                .then(() => { return configuration; });
         })
         // Write the extracted archive to S3
         .then(configuration => {

@@ -22,6 +22,7 @@
     + For local testing/manual updates: following deployment the log will contain the correct endpoint, and using the SNS notification will supply it via SNS.
     + The number of saved aliases can be controlled, both as total numbers and amount of time
     + See below for more details and how to turn the feature off
++ Start/Completion notifications now provided (via SNS)
 
 #### Breaking Changes
 While v2.0.0 represents a total rewrite of the codebase from scratch, every effort has been made to maintain a nearly identical JSON configuration format.
@@ -74,11 +75,18 @@ JSON configuration and detailed description:
 ```
 {
     "applicationName": "SomeGoodName",
+    "snsNotifications": {},
     "taskFilters": {},
     "tasks": []
 }
 ```
 + The *applicationName* will be used as part of the AWS Lambda function naming, and the API Gateway name for the API
+
++ *snsNotifications* is optional, and can be used to send a message when processing starts, and again when it completes
+    + ```{ "topicArn": null, "timeZone": null }```
+        + ```"topicArn"``` is the ARN for publication
+        + ```"timeZone"``` sets the timezone to use for all timestamps
+            + This should be an IANA timezone string, but we're using [Luxon](https://moment.github.io/luxon/index.html) under-the-hood if you really want to get into the details of what can be set
 
 + *taskFilters* is optional, and very useful when the array of Lambda functions or API Gateway endpoints becomes too large to manually delete from when working with test deployments
     + ```{ "include": { "lambda": null, "apiGateway": null } }```
@@ -287,6 +295,13 @@ JSON configuration and detailed description:
             "arn:aws:apigateway:*::/*"
         ]
         ```
+    + **SNS** *(optional)*
+        ```
+        "Effect": "Allow",
+        "Action": "sns:Publish",
+        "Resource": "arn:aws:sns:*:*:*"
+        ```
+        **NOTE**: the Resource ARN above can be as specific as warranted, including specific to a single topic
 
 ## Trigger configuration
 

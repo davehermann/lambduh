@@ -22,6 +22,11 @@ function apiGatewayTask(task, remainingTasks) {
                 task.versionAliases = [task.deployment.stage];
                 if (task.deployment.production)
                     task.versionAliases.push(`${task.deployment.stage}_${remainingTasks.startTime.toFormat(`yyyyLLddHHmmss`)}`);
+
+                if (!remainingTasks.deployedApis)
+                    remainingTasks.deployedApis = [];
+
+                remainingTasks.deployedApis.push({ apiId: task.apiId, aliases: task.versionAliases });
             })
             .then(() => { return false; });
     else if ((!!task.aliasNonEndpoints && (task.aliasNonEndpoints.length > 0)) || (!!task.endpoints && (task.endpoints.length > 0)))
