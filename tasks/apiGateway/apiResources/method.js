@@ -2,7 +2,7 @@
 
 const aws = require(`aws-sdk`),
     { Throttle } = require(`../throttle`),
-    { Dev, Trace, Debug, Info } = require(`../../../logging`);
+    { Trace, Debug, Info } = require(`../../../logging`);
 
 const apiGateway = new aws.APIGateway({ apiVersion: `2015-07-09` });
 

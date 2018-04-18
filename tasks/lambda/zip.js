@@ -3,7 +3,7 @@
 const fs = require(`fs-extra`),
     jsZip = require(`jszip`),
     { ReadDirectoryContents } = require(`../../extractArchive`),
-    { Dev, Trace, Debug, Info } = require(`../../logging`);
+    { Trace, Debug, Info } = require(`../../logging`);
 
 function generateZip(codeLocation, functionName, task) {
     return addFilesToZip(codeLocation, functionName)

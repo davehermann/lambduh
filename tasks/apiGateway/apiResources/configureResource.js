@@ -6,7 +6,7 @@ const { AddMethod } = require(`./method`),
     { GenerateIntegrationResponse } = require(`../lambdaIntegration/integrationResponse`),
     { AddLambdaIntegration } = require(`../lambdaIntegration/methodIntegration`),
     { GenerateMethodResponse } = require(`./methodResponse`),
-    { Dev, Trace, Debug, Info } = require(`../../../logging`);
+    { Debug } = require(`../../../logging`);
 
 
 function configureResource(endpointDefinition, task, remainingTasks) {

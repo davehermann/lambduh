@@ -10,7 +10,7 @@ const aws = require(`aws-sdk`),
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
-function processNextFile(evtData, localRoot, extractionLocation) {
+function processNextFile(evtData, localRoot) {
     let s3Source = evtData.Records[0].s3;
 
     Warn(`Continuing processing with "${s3Source.object.key} in ${s3Source.bucket.name}"`);
@@ -21,7 +21,7 @@ function processNextFile(evtData, localRoot, extractionLocation) {
 
             return configuration;
         })
-        .then(configuration => nextTask(configuration, s3Source, localRoot, extractionLocation));
+        .then(configuration => nextTask(configuration, s3Source, localRoot));
 }
 
 function loadFile(Bucket, Key) {
@@ -35,7 +35,7 @@ function loadFile(Bucket, Key) {
         });
 }
 
-function nextTask(configuration, s3Source, localRoot, extractionLocation) {
+function nextTask(configuration, s3Source, localRoot) {
     if (configuration.remainingTasks.tasks.length > 0) {
         let currentTask = configuration.remainingTasks.tasks[0],
             runningTask = Promise.resolve(true);

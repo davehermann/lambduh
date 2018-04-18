@@ -33,7 +33,7 @@ function startProcessing(evtData, context) {
             fileName = path.basename(s3Source.object.key);
 
         if (fileName.search(/\.lambduh\.txt$/) >= 0)
-            return NextSteps(evtData, localRoot, extractionLocation);
+            return NextSteps(evtData, localRoot);
         else
             return Initialize(evtData, context, localRoot, extractionLocation);
     }

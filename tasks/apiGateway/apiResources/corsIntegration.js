@@ -4,7 +4,7 @@ const { AddMethod } = require(`./method`),
     { GenerateMethodResponse } = require(`./methodResponse`),
     { GenerateIntegrationResponse } = require(`../lambdaIntegration/integrationResponse`),
     { AddMockIntegration } = require(`../lambdaIntegration/methodIntegration`),
-    { Dev, Trace, Debug, Info } = require(`../../../logging`);
+    { Debug } = require(`../../../logging`);
 
 function addCorsMethod(endpointDefinition, task, methodResourceIntegration) {
     Debug(`Adding CORS OPTIONS method`);

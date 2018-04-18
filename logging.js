@@ -16,6 +16,7 @@ function writeLog(data, asJSON, level) {
     level = levels[level.toLowerCase()];
 
     if (level >= currentLevel)
+        // eslint-disable-next-line no-console
         console.log(asJSON ? JSON.stringify(data) : data);
 }
 

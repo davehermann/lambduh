@@ -86,6 +86,8 @@ function prepareCodeFiles(codeLocation, s3Source, startTime, filesToProcess, npm
                             localFiles = [];
 
                         foundRequires.forEach(req => {
+                            // Use a RegExp match to pull the capture group for the require name
+                            // eslint-disable-next-line no-unused-vars
                             let requireItem = req.match(/\("(.+)"\)/g);
 
                             if (RegExp.$1.substr(0, 1) == `.`)

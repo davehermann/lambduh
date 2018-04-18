@@ -4,7 +4,7 @@ const aws = require(`aws-sdk`),
     { AddInvocationPermissions } = require(`./invocationPermissions`),
     { VersionAndAliasFunction } = require(`./versioningAndAliases`),
     { Throttle } = require(`../throttle`),
-    { Dev, Trace, Debug, Info } = require(`../../../logging`);
+    { Dev, Trace, Debug } = require(`../../../logging`);
 
 const apiGateway = new aws.APIGateway({ apiVersion: `2015-07-09` });
 

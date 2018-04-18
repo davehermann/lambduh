@@ -129,7 +129,7 @@ function runNpm(localRoot, codeLocation, npmRequires) {
                     Fatal(`NPM INSTALL FAILED`);
                     reject(err);
                 });
-                npm.on(`close`, (exitCode) => {
+                npm.on(`close`, () => {
                     let newFiles = fs.readdirSync(codeLocation);
 
                     if (newFiles.indexOf(`npm-debug.log`) >= 0) {

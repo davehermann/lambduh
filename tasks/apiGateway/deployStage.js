@@ -114,7 +114,6 @@ function setMethodIntegrationForDeployment(methodAliases, methodDetails, resourc
                 // Set the alias as the integration for the method
 
                 // Get the function name from the versionless ARN
-                let arnParts = noVersionArn.split(`:`);
                 return SetLambdaIntegrationFunction({ method: methodDetails.httpMethod }, { resource }, { newAliases: neededAlias }, existingIntegration, task, remainingTasks)
                     // The integration response will have been wiped out, so regenerate
                     .then(() => GenerateIntegrationResponse(task, { method: methodDetails, resource }));

@@ -2,7 +2,7 @@
 
 const aws = require(`aws-sdk`),
     uuid = require(`uuid`),
-    { Dev, Trace, Debug, Info } = require(`../../../logging`);
+    { Trace, Debug, Info } = require(`../../../logging`);
 
 const lambda = new aws.Lambda({ apiVersion: `2015-03-31` });
 
