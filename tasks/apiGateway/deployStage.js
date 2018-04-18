@@ -4,7 +4,7 @@ const aws = require(`aws-sdk`),
     { GetResourcesForApi } = require(`./apiResources/getResources`),
     { GenerateIntegrationResponse } = require(`./lambdaIntegration/integrationResponse`),
     { GetExistingIntegration, SetLambdaIntegrationFunction } = require(`./lambdaIntegration/methodIntegration`),
-    { GetAliases } = require(`./lambdaIntegration/versioningAndAliases`),
+    { CreateOrUpdateAlias, GetAliases } = require(`./lambdaIntegration/versioningAndAliases`),
     { Throttle } = require(`./throttle`),
     { Dev, Trace, Debug, Info } = require(`../../logging`);
 
@@ -100,25 +100,41 @@ function getMethods(methodList, stageName, resource, task, remainingTasks) {
 
 function setMethodIntegrationForDeployment(methodAliases, methodDetails, resource, stageName, noVersionArn, task, remainingTasks) {
     // Find one tagged with the stage name
-    let neededAlias = methodAliases.filter(alias => { return alias.Name === stageName; });
+    let neededAlias = methodAliases.filter(alias => { return alias.Name === stageName; }),
+        pIntegrate = Promise.resolve();
 
-    // If none exists, throw an error as the release intent is unknown
-    if (neededAlias.length == 0)
-        return Promise.reject(`No alias ${stageName} exists for ${noVersionArn}.`);
-    else {
-        Trace({ neededAlias, httpMethod: methodDetails.httpMethod, resource, stageName, noVersionArn }, true);
-        Debug(`Updating integration for ${noVersionArn} with ${stageName} alias`);
-        // Get the existing integration
-        return GetExistingIntegration(methodDetails.httpMethod, resource.id, task.apiId)
-            .then(existingIntegration => {
-                // Set the alias as the integration for the method
+    // When deploying a versioned stage, and the stage name exists, create a new alias to the version that the stage alias points to
+    if ((neededAlias.length == 0) && (stageName !== task.deployment.stage)) {
+        let stageAlias = methodAliases.filter(alias => { return alias.Name === task.deployment.stage; });
 
-                // Get the function name from the versionless ARN
-                return SetLambdaIntegrationFunction({ method: methodDetails.httpMethod }, { resource }, { newAliases: neededAlias }, existingIntegration, task, remainingTasks)
-                    // The integration response will have been wiped out, so regenerate
-                    .then(() => GenerateIntegrationResponse(task, { method: methodDetails, resource }));
-            });
+        // With a stage alias, a new versioned stage alias can be created
+        if (stageAlias.length > 0)
+            pIntegrate = CreateOrUpdateAlias(stageName, { existingAliases: methodAliases, newVersion: { FunctionName: noVersionArn, Version: stageAlias[0] } })
+                .then(versioning => {
+                    // versioning.newAliases[0] will be the neededAlias
+                    neededAlias = versioning.newAliases;
+                });
     }
+
+    pIntegrate = pIntegrate
+        .then(() => {
+            // If no matching alias exists, throw an error as the release intent is unknown
+            if (neededAlias.length == 0)
+                return Promise.reject(`No alias ${stageName} exists for ${noVersionArn}.`);
+        })
+        .then(() => {
+            Trace({ neededAlias, httpMethod: methodDetails.httpMethod, resource, stageName, noVersionArn }, true);
+            Debug(`Updating integration for ${noVersionArn} with ${stageName} alias`);
+
+            // Get the existing integration
+            return GetExistingIntegration(methodDetails.httpMethod, resource.id, task.apiId);
+        })
+        // Set the alias as the integration for the method
+        .then(existingIntegration => SetLambdaIntegrationFunction({ method: methodDetails.httpMethod }, { resource }, { newAliases: neededAlias }, existingIntegration, task, remainingTasks))
+        // At this point, the integration response will have been wiped out, so regenerate
+        .then(() => GenerateIntegrationResponse(task, { method: methodDetails, resource }));
+
+    return pIntegrate;
 }
 
 module.exports.DeployStage = deployStage;

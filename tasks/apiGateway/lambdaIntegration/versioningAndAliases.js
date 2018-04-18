@@ -206,3 +206,4 @@ function deleteVersions(functionArn, versionList) {
 
 module.exports.VersionAndAliasFunction = versionAndAliasFunction;
 module.exports.GetAliases = getAliases;
+module.exports.CreateOrUpdateAlias = createOrUpdateAlias;
