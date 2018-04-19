@@ -53,8 +53,10 @@ function startupNotification() {
         let allEndpoints = 0,
             allNonEndpoints = 0;
         gatewayTasks.forEach(task => {
-            allEndpoints += task.endpoints.length;
-            allNonEndpoints += task.aliasNonEndpoints.length;
+            if (!!task.endpoints)
+                allEndpoints += task.endpoints.length;
+            if (!!task.aliasNonEndpoints)
+                allNonEndpoints += task.aliasNonEndpoints.length;
             message += `\n ----- Deploy to ${task.deployment.production ? `versioned` : `non-versioned`} stage: ${task.deployment.stage}`;
         });
 
