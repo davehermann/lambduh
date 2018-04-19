@@ -18,10 +18,22 @@ function deployStage(task, remainingTasks) {
 }
 
 function loadResourcesForApi(task) {
-    return GetResourcesForApi(task.apiId)
-        .then(apiResources => {
-            task.stagesToDeploy = task.versionAliases.map(alias => { return { stageName: alias, resources: apiResources.filter(() => { return true; }) }; });
-        });
+    // Only deploy when a new alias has been created on a function
+    let aliasesToDeploy = task.versionAliases.filter(alias => { return task.createdAliases.indexOf(alias) >= 0; });
+
+    if (aliasesToDeploy.length > 0)
+        return GetResourcesForApi(task.apiId)
+            .then(apiResources => {
+                task.stagesToDeploy = aliasesToDeploy.map(alias => { return { stageName: alias, resources: apiResources.filter(() => { return true; }) }; });
+            });
+    else {
+        // Set stagesToDeploy to an empty array to drop the deployment task
+        task.stagesToDeploy = [];
+
+        Warn(`No newly created aliases to deploy`);
+
+        return Promise.resolve();
+    }
 }
 
 function integrateNextResource(task, remainingTasks, fromResourceIntegration) {

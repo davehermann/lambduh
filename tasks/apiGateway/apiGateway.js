@@ -19,6 +19,7 @@ function apiGatewayTask(task, remainingTasks) {
             // Store the API ID in the task data, along with a unique version ID
             .then(apiId => {
                 task.apiId = apiId;
+                task.createdAliases = [];
                 task.versionAliases = [task.deployment.stage];
                 if (task.deployment.production)
                     task.versionAliases.push(`${task.deployment.stage}_${remainingTasks.startTime.toFormat(`yyyyLLddHHmmss`)}`);

@@ -64,17 +64,21 @@ function enableNewAlias(versioning, task, remainingAliases) {
         remainingAliases = task.versionAliases.filter(() => { return true; });
 
     if (remainingAliases.length > 0)
-        return createOrUpdateAlias(remainingAliases.shift(), versioning)
+        return createOrUpdateAlias(remainingAliases.shift(), versioning, task)
             .then(versioning => enableNewAlias(versioning, task, remainingAliases));
     else
         return Promise.resolve(versioning);
 }
 
-function createOrUpdateAlias(newAliasName, versioning) {
+function createOrUpdateAlias(newAliasName, versioning, task) {
     // Find a matching alias
     let foundAlias = versioning.existingAliases.filter(alias => { return alias.Name == newAliasName; });
     let isUpdate = foundAlias.length > 0;
     Dev({ "Matching alias": foundAlias }, true);
+
+    // Track when a new alias is created on a function
+    if (!isUpdate && !!task && (task.createdAliases.indexOf(newAliasName) < 0))
+        task.createdAliases.push(newAliasName);
 
     let newAlias = {
         FunctionName: versioning.newVersion.FunctionName,
