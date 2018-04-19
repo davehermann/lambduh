@@ -37,8 +37,8 @@ function deployFunction(task, remainingTasks, s3Source, localRoot) {
         functionName = generateFunctionName(remainingTasks, nextFunction.name),
         codeLocation = path.join(localRoot, `packaging`, functionName);
 
+    Info(`Deploying ${functionName} (${task.functions.length} remaining to deploy)`);
     Debug({ "Lambda function deployment": nextFunction}, true);
-    Info(`Deploying ${functionName}`);
 
     return CleanTemporaryRoot(localRoot)
         .then(() => { Debug(`Walk the code, and copy all requires`); })

@@ -69,6 +69,13 @@ function getApiIdForApplicationName(applicationName) {
 }
 
 function processNextService(task, remainingTasks) {
+    let counter = 0;
+    if (!!task.aliasNonEndpoints)
+        counter += task.aliasNonEndpoints.length;
+    if (!!task.endpoints)
+        counter += task.endpoints.length;
+    Info(`${counter} remaining services to process for deployment`);
+
     // Step through one endpoint, or non-endpoint function, once per instance
     if (!!task.aliasNonEndpoints && (task.aliasNonEndpoints.length > 0))
         return processNextNonEndpoint(task, remainingTasks);
