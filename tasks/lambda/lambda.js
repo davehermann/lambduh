@@ -78,7 +78,7 @@ function prepareCodeFiles(codeLocation, s3Source, startTime, filesToProcess, npm
                     Dev(sourceFile);
 
                     // Analyze the require statements
-                    let foundRequires = sourceFile.match(/require\(".+"\)/g);
+                    let foundRequires = sourceFile.match(/require\(['"`].+['"`]\)/g);
                     Debug({ "Found requires": foundRequires }, true);
 
                     if (!!foundRequires) {
@@ -88,7 +88,7 @@ function prepareCodeFiles(codeLocation, s3Source, startTime, filesToProcess, npm
                         foundRequires.forEach(req => {
                             // Use a RegExp match to pull the capture group for the require name
                             // eslint-disable-next-line no-unused-vars
-                            let requireItem = req.match(/\("(.+)"\)/g);
+                            let requireItem = req.match(/\(['"`](.+)['"`]\)/g);
 
                             if (RegExp.$1.substr(0, 1) == `.`)
                                 localFiles.push(RegExp.$1);
