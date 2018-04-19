@@ -9,6 +9,7 @@
   "main": "deploy.js",
   "author": "Dave Hermann <hermann.dp+github@gmail.com>",
   "dependencies": {
+    "builtin-modules": "^2.0.0",
     "fs-extra": "^5.0.0",
     "jszip": "^3.1.5",
     "luxon": "^1.0.0",

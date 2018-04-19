@@ -1,6 +1,7 @@
 "use strict";
 
 const aws = require(`aws-sdk`),
+    builtinModules = require(`builtin-modules`),
     fs = require(`fs-extra`),
     path = require(`path`),
     spawn = require(`child_process`).spawn,
@@ -29,8 +30,13 @@ function npmInstall(task, s3Source, localRoot, codeLocation, startTime, npmRequi
         .then(packageJSON => {
             // If the AWS SDK is required, and it appears in the package JSON's dependencies, install it
             // Otherwise, remove it from the list
-            if ((npmRequires.indexOf(`aws-sdk`) >= 0) && (!packageJSON.dependencies || !packageJSON.dependencies[`aws-sdk`]))
-                npmRequires.splice(npmRequires.indexOf(`aws-sdk`), 1);
+            let unneededModules = builtinModules.concat([`aws-sdk`]);
+            for (let idx = npmRequires.length - 1; idx >= 0; idx--) {
+                let moduleName = npmRequires[idx];
+
+                if ((unneededModules.indexOf(moduleName) >= 0) && (!packageJSON.dependencies || !packageJSON.dependencies[moduleName]))
+                    npmRequires.splice(idx, 1);
+            }
 
             return npmRequires;
         })
