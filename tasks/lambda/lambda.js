@@ -188,7 +188,7 @@ function updateFunctionInLambda(zipAsBuffer, nextFunction, functionName, task) {
                     .then(() => {
                         Debug(`Configuration updated.  Updating function code.`);
 
-                        return lambda.updateFunctionCode({ FunctionName: functionName, ZipFile: zipAsBuffer });
+                        return lambda.updateFunctionCode({ FunctionName: functionName, ZipFile: zipAsBuffer }).promise();
                     })
                     .then(() => { Debug(`Code updated`); });
             }
