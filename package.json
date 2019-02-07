@@ -7,14 +7,14 @@
     "build": "node buildForLambda.js"
   },
   "main": "deploy.js",
-  "author": "Dave Hermann <hermann.dp+github@gmail.com>",
+  "author": "Dave Hermann",
   "dependencies": {
-    "builtin-modules": "^2.0.0",
-    "fs-extra": "^5.0.0",
+    "builtin-modules": "^3.0.0",
+    "fs-extra": "^7.0.1",
     "jszip": "^3.1.5",
-    "luxon": "^1.0.0",
-    "mime-types": "^2.1.18",
-    "tar": "^4.4.1",
-    "uuid": "^3.2.1"
+    "luxon": "^1.11.1",
+    "mime-types": "^2.1.21",
+    "tar": "^4.4.8",
+    "uuid": "^3.3.2"
   }
 }
