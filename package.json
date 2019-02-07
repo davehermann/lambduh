@@ -16,5 +16,8 @@
     "mime-types": "^2.1.21",
     "tar": "^4.4.8",
     "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "eslint": "^5.13.0"
   }
 }
