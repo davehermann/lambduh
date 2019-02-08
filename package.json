@@ -9,14 +9,9 @@
   "author": "Dave Hermann",
   "dependencies": {
     "aws-sdk": "^2.399.0",
-    "builtin-modules": "^3.0.0",
     "fs-extra": "^7.0.1",
     "inquirer": "^6.2.2",
-    "jszip": "^3.1.5",
-    "luxon": "^1.11.1",
-    "mime-types": "^2.1.21",
-    "tar": "^4.4.8",
-    "uuid": "^3.3.2"
+    "mime-types": "^2.1.21"
   },
   "devDependencies": {
     "eslint": "^5.13.0"
