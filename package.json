@@ -4,9 +4,8 @@
   "description": "Stupid name. Stupidly easy Lambda deployment.",
   "private": true,
   "scripts": {
-    "build": "node buildForLambda.js"
+    "build": "node ./src/buildForLambda.js"
   },
-  "main": "deploy.js",
   "author": "Dave Hermann",
   "dependencies": {
     "aws-sdk": "^2.399.0",
