@@ -4,7 +4,7 @@
   "description": "Stupid name. Stupidly easy Lambda deployment.",
   "private": true,
   "scripts": {
-    "build": "node ./src/buildForLambda.js"
+    "postinstall": "node ./post-install.js"
   },
   "author": "Dave Hermann",
   "dependencies": {
