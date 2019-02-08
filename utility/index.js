@@ -23,7 +23,7 @@ function parseArguments() {
         switch (nextArg) {
             case `init`:
                 // If any argument is "init", only run init
-                actions = [{ description: `Initializing Deployment`, action: CreateDeploymentConfiguration }];
+                actions = [{ description: `Configuring for Deployment`, action: CreateDeploymentConfiguration }];
                 argsArray = [];
                 break;
         }
@@ -35,13 +35,20 @@ function parseArguments() {
     return Promise.resolve(actions);
 }
 
-function runActions(remainingActions) {
+function runActions(remainingActions, isFirst) {
+    if (isFirst)
+        // eslint-disable-next-line no-console
+        console.log(`\n--- Lamb-duh Utility ---\n`);
+
     if (remainingActions.length > 0) {
         let nextAction = remainingActions.shift();
 
-        if (!!nextAction.description)
+        if (!!nextAction.description) {
             // eslint-disable-next-line no-console
             console.log(nextAction.description);
+            // eslint-disable-next-line no-console
+            console.log((``).padStart(nextAction.description.length, `-`));
+        }
 
         return nextAction.action()
             .then(() => runActions(remainingActions));
@@ -50,4 +57,4 @@ function runActions(remainingActions) {
 }
 
 parseArguments()
-    .then(actions => runActions(actions));
+    .then(actions => runActions(actions, true));
