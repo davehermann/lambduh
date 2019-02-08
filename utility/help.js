@@ -3,14 +3,14 @@
  */
 function displayHelp() {
     let helpText =
-        `\n`
-        + `Lamb-duh Serverless Deployment\n`
+        `--- Help ---\n`
         + `\n`
         + `Usage: lambduh COMMAND [options]\n`
         + `\n`
-        + `Options\n`
-        + `-------\n`
-        + `    init  Generates a configuration file for deployment by asking a series of questions\n`
+        + `Commands\n`
+        + `--------\n`
+        + `    init    Generates a configuration file for deployment by asking a series of questions\n`
+        + `    deploy  Copy compressed source file to destination S3 bucket`
         ;
 
     // eslint-disable-next-line no-console

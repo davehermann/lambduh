@@ -14,6 +14,7 @@ function loadExistingFile() {
             console.log(`Existing configuration found.\nUsing existing values for defaults.\n`);
             return JSON.parse(contents);
         })
+        // eslint-disable-next-line no-unused-vars
         .catch(err => {
             // On any error, assume the file either doesn't exist or can't be read
             return {};

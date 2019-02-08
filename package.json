@@ -9,6 +9,7 @@
   "main": "deploy.js",
   "author": "Dave Hermann",
   "dependencies": {
+    "aws-sdk": "^2.399.0",
     "builtin-modules": "^3.0.0",
     "fs-extra": "^7.0.1",
     "inquirer": "^6.2.2",

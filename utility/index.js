@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { CreateDeploymentConfiguration } = require(`./deploymentConfiguration`),
+    { DeployPackage } = require(`./deployPackage`),
     { ShowHelp } = require(`./help`);
 
 /**
@@ -26,6 +27,10 @@ function parseArguments() {
                 actions = [{ description: `Configuring for Deployment`, action: CreateDeploymentConfiguration }];
                 argsArray = [];
                 break;
+
+            case `deploy`:
+                actions.push({ description: `Starting deployment`, action: DeployPackage });
+                break;
         }
     }
 
@@ -38,7 +43,7 @@ function parseArguments() {
 function runActions(remainingActions, isFirst) {
     if (isFirst)
         // eslint-disable-next-line no-console
-        console.log(`\n--- Lamb-duh Utility ---\n`);
+        console.log(`\n--- Lamb-duh Serverless Deployment ---\n`);
 
     if (remainingActions.length > 0) {
         let nextAction = remainingActions.shift();
