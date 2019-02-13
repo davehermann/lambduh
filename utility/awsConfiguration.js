@@ -15,8 +15,9 @@ function collectKeyDetails() {
     let questions = [
         {
             name: `credentialsProfile`,
-            message: `Specify a profile for your AWS Shared Credentials`,
+            message: `Profile name in your AWS Shared Credentials`,
             default: `default`,
+            suffix: ` [if different from "default"]:`,
         },
         {
             name: `iamRoleName`,
@@ -39,10 +40,22 @@ function collectKeyDetails() {
                 return true;
             },
         },
+        {
+            type: `confirm`,
+            name: `ready`,
+            default: false,
+            message: `Ready to create IAM role, and S3-integrated Lambda function:`,
+        }
     ];
 
     return inquirer.prompt(questions)
         .then(answers => {
+            if (!answers.confirm) {
+                Warn(`Re-run this process when you are ready to proceed.`);
+
+                process.exit();
+            }
+
             if (answers.credentialsProfile != `default`)
                 aws.config.credentials = new aws.SharedIniFileCredentials({ profile: answers.credentialsProfile });
 
@@ -114,13 +127,37 @@ function confirmS3Trigger(answers, skipValidation) {
 }
 
 /**
- * Completely configure AWS for usage of Lamb-duh
+ * Display the permissions necessary for running this process
  */
-function configureAWS() {
+function displayPermissions() {
     Warn(`The configuration process requires an IAM credential with the following permissions:`);
     Warn(`  - ${Configurator.document.Statement[0].Action.join(`\n  - `)}\n`);
 
-    return collectKeyDetails()
+    let questions = [
+        {
+            type: `confirm`,
+            name: `showDoc`,
+            message: `View these permissions formatted as an IAM policy document?`,
+            default: false,
+        }
+    ];
+
+    return inquirer.prompt(questions)
+        .then(answers => {
+            if (answers.showDoc) {
+                Warn(Configurator.document);
+
+                Warn(`\nThe above JSON can be pasted in as a policy document on an IAM User/Group\n`);
+            }
+        });
+}
+
+/**
+ * Completely configure AWS for usage of Lamb-duh
+ */
+function configureAWS() {
+    return displayPermissions()
+        .then(() => collectKeyDetails())
         .then(answers => confirmS3Trigger(answers))
         .then(answers => AddRole(answers))
         .then(data => CreateLambdaFunction(data.answers, data.role))
