@@ -1,3 +1,6 @@
+// NPM Modules
+const { Warn } = require(`multi-level-logger`);
+
 /**
  * Display help text
  */
@@ -34,8 +37,7 @@ function displayHelp(options) {
             + `                         - Including the "help" parameter will provide specifics, included actual permissions created\n`
         ;
 
-    // eslint-disable-next-line no-console
-    console.log(`${helpText}`);
+    Warn(`${helpText}`);
 
     return Promise.resolve();
 }

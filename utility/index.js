@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// NPM Modules
+const { IncludeTimestamp, InitializeLogging, Warn } = require(`multi-level-logger`);
+
+// Application Modules
 const { ConfigureAWS } = require(`./awsConfiguration`),
     { CreateDeploymentConfiguration } = require(`./deploymentConfiguration`),
     { DeployPackage } = require(`./deployPackage`),
@@ -52,17 +56,14 @@ function parseArguments() {
 
 function runActions(remainingActions, isFirst) {
     if (isFirst)
-        // eslint-disable-next-line no-console
-        console.log(`\n--- Lamb-duh Serverless Deployment ---\n`);
+        Warn(`\n--- Lamb-duh Serverless Deployment ---\n`);
 
     if (remainingActions.length > 0) {
         let nextAction = remainingActions.shift();
 
         if (!!nextAction.description) {
-            // eslint-disable-next-line no-console
-            console.log(nextAction.description);
-            // eslint-disable-next-line no-console
-            console.log((``).padStart(nextAction.description.length, `-`));
+            Warn(nextAction.description);
+            Warn((``).padStart(nextAction.description.length, `-`));
         }
 
         return nextAction.action(nextAction.options)
@@ -70,6 +71,9 @@ function runActions(remainingActions, isFirst) {
     } else
         return Promise.resolve();
 }
+
+InitializeLogging(`info`);
+IncludeTimestamp(false);
 
 parseArguments()
     .then(actions => runActions(actions, true));

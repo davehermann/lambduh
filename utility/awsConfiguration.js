@@ -1,8 +1,14 @@
+// Node Modules
+const fs = require(`fs`),
+    path = require(`path`);
+
+// NPM Modules
 const aws = require(`aws-sdk`),
-    fs = require(`fs`),
     inquirer = require(`inquirer`),
-    path = require(`path`),
-    { PermissionSet, TrustedEntity } = require(`./aws/policyDocuments`),
+    { Warn, Err } = require(`multi-level-logger`);
+
+// Application Modules
+const { Configurator, PermissionSet, TrustedEntity } = require(`./aws/policyDocuments`),
     { Throttle } = require(`../src/tasks/apiGateway/throttle`);
 
 /**
@@ -59,8 +65,7 @@ function addPermissionsToIAMRole(role, answers, remainingPermissions) {
     if (remainingPermissions.length > 0) {
         let policy = remainingPermissions.shift();
 
-        // eslint-disable-next-line no-console
-        console.log(`Adding permissions for ${policy.name} to "${role.roleName}"`);
+        Warn(`Adding permissions for ${policy.name} to "${role.roleName}"`);
 
         // Add all necessary permissions in-line
         const policyParams = {
@@ -88,8 +93,7 @@ function addPermissionsToIAMRole(role, answers, remainingPermissions) {
 function addRoleToIAM(answers) {
     const iam = new aws.IAM({ apiVersion: `2010-05-08` });
 
-    // eslint-disable-next-line no-console
-    console.log(`Creating new role "${answers.iamRoleName}"`);
+    Warn(`Creating new role "${answers.iamRoleName}"`);
 
     // Create a new role
     const newRoleParams = {
@@ -100,8 +104,7 @@ function addRoleToIAM(answers) {
 
     return iam.createRole(newRoleParams).promise()
         .then(data => {
-            // eslint-disable-next-line no-console
-            console.log(`New "${newRoleParams.RoleName}" IAM role created`);
+            Warn(`New "${newRoleParams.RoleName}" IAM role created`);
 
             return { roleName: data.Role.RoleName, arn: data.Role.Arn };
         })
@@ -120,8 +123,7 @@ function confirmS3Trigger(answers, skipValidation) {
         pGetBuckets = Promise.resolve();
 
     if (!skipValidation) {
-        // eslint-disable-next-line no-console
-        console.log(`\nConfirming S3 bucket "${answers.s3TriggerBucket}" exists...`);
+        Warn(`\nConfirming S3 bucket "${answers.s3TriggerBucket}" exists...`);
         pGetBuckets = s3.listBuckets().promise();
     }
 
@@ -135,19 +137,14 @@ function confirmS3Trigger(answers, skipValidation) {
                 if (!!foundBucket)
                     return Promise.resolve(answers);
                 else
-                    // eslint-disable-next-line no-console
-                    console.log(`\n...bucket NOT FOUND in S3`);
+                    Warn(`\n...bucket NOT FOUND in S3`);
             }
 
             if (!foundBucket) {
-                // eslint-disable-next-line no-console
-                console.log(`-----`),
-                // eslint-disable-next-line no-console
-                console.log(`This configuration process WILL NOT create the S3 triggering bucket for you.`);
-                // eslint-disable-next-line no-console
-                console.log(`Please ensure a bucket exists for receiving the compressed deployment packages before continuing.`);
-                // eslint-disable-next-line no-console
-                console.log(`-----`);
+                Warn(`-----`),
+                Warn(`This configuration process WILL NOT create the S3 triggering bucket for you.`);
+                Warn(`Please ensure a bucket exists for receiving the compressed deployment packages before continuing.`);
+                Warn(`-----`);
 
                 let questions = [
                     {
@@ -164,8 +161,7 @@ function confirmS3Trigger(answers, skipValidation) {
             }
         })
         .then(answers => {
-            // eslint-disable-next-line no-console
-            console.log(`...Bucket found in S3`);
+            Warn(`...Bucket found in S3`);
 
             // Query the region
             return s3.getBucketLocation({ Bucket: answers.s3TriggerBucket }).promise()
@@ -173,8 +169,7 @@ function confirmS3Trigger(answers, skipValidation) {
                     // Update the configuration to use the region detected (default to N. Virginia for an empty string)
                     aws.config.update({ region: data.LocationConstraint || `us-east-1` });
 
-                    // eslint-disable-next-line no-console
-                    console.log(`Configured to use S3 region of ${data.LocationConstraint || `us-east-1`}`);
+                    Warn(`Configured to use S3 region of ${data.LocationConstraint || `us-east-1`}`);
 
                     return answers;
                 });
@@ -203,8 +198,7 @@ function retryableLambdaCreation(configuration, retryCount, creationData) {
                 retryCount++;
 
                 // Note the error
-                // eslint-disable-next-line no-console
-                console.error(`${err.code}: ${err.message}`);
+                Err(`${err.code}: ${err.message}`);
 
                 return Throttle(null, 5000)
                     .then(() => retryableLambdaCreation(configuration, retryCount));
@@ -237,8 +231,7 @@ function retryLambdaTriggering(triggerParams, retryCount, creationData) {
                 retryCount++;
 
                 // Note the error
-                // eslint-disable-next-line no-console
-                console.error(`${err.code}: ${err.message}`);
+                Err(`${err.code}: ${err.message}`);
 
                 return Throttle(null, 5000)
                     .then(() => retryLambdaTriggering(triggerParams, retryCount));
@@ -277,8 +270,7 @@ function addS3InvokeLambdaPermission(FunctionName, SourceArn) {
  */
 function createLambdaFunction(answers, role) {
 
-    // eslint-disable-next-line no-console
-    console.log(`Deploying code to Lambda`);
+    Warn(`Deploying code to Lambda`);
 
     return new Promise((resolve, reject) => {
         fs.readFile(path.join(__dirname, `../Lambda Deployment Package.zip`), (err, contents) => {
@@ -299,27 +291,23 @@ function createLambdaFunction(answers, role) {
                 Runtime: `nodejs8.10`,
             };
 
-            // eslint-disable-next-line no-console
-            console.log(`This will retry every 5 seconds, up to 1 minute, due to delays in IAM replication`);
+            Warn(`This will retry every 5 seconds, up to 1 minute, due to delays in IAM replication`);
 
             return retryableLambdaCreation(newLambdaFunction);
         })
         .then(lambdaFunction => {
-            // eslint-disable-next-line no-console
-            console.log(`...Function "${lambdaFunction.FunctionName}" deployed`);
+            Warn(`...Function "${lambdaFunction.FunctionName}" deployed`);
 
             return lambdaFunction;
         })
         .then(lambdaFunction => {
-            // eslint-disable-next-line no-console
-            console.log(`Adding permission for ${answers.s3TriggerBucket} to invoke ${lambdaFunction.FunctionName}`);
+            Warn(`Adding permission for ${answers.s3TriggerBucket} to invoke ${lambdaFunction.FunctionName}`);
 
             return addS3InvokeLambdaPermission(lambdaFunction.FunctionArn, `arn:aws:s3:::${answers.s3TriggerBucket}`)
                 .then(() => { return lambdaFunction; });
         })
         .then(lambdaFunction => {
-            // eslint-disable-next-line no-console
-            console.log(`Configuring S3 triggers for "${answers.s3TriggerBucket}"`);
+            Warn(`Configuring S3 triggers for "${answers.s3TriggerBucket}"`);
 
             let triggerParams = {
                 Bucket: answers.s3TriggerBucket,
@@ -362,14 +350,12 @@ function createLambdaFunction(answers, role) {
                 }
             };
 
-            // eslint-disable-next-line no-console
-            console.log(`This will retry every 5 seconds, up to 1 minute, due to delays in Lambda replication`);
+            Warn(`This will retry every 5 seconds, up to 1 minute, due to delays in Lambda replication`);
 
             return retryLambdaTriggering(triggerParams);
         })
         .then(() => {
-            // eslint-disable-next-line no-console
-            console.log(`Triggers added`);
+            Warn(`Triggers added`);
         });
 }
 
@@ -377,36 +363,16 @@ function createLambdaFunction(answers, role) {
  * Completely configure AWS for usage of Lamb-duh
  */
 function configureAWS() {
-    // eslint-disable-next-line no-console
-    console.log(`The configuration process requires an IAM credential with the following permissions:`);
-    // eslint-disable-next-line no-console
-    console.log(`    - iam:CreateRole`);
-    // eslint-disable-next-line no-console
-    console.log(`    - iam:PassRole`);
-    // eslint-disable-next-line no-console
-    console.log(`    - iam:PutRolePolicy`);
-    // eslint-disable-next-line no-console
-    console.log(`    - lambda:AddPermission`);
-    // eslint-disable-next-line no-console
-    console.log(`    - lambda:CreateFunction`);
-    // eslint-disable-next-line no-console
-    console.log(`    - s3:GetBucketLocation`);
-    // eslint-disable-next-line no-console
-    console.log(`    - s3:ListAllMyBuckets`);
-    // eslint-disable-next-line no-console
-    console.log(`    - s3:PutBucketNotification`);
-    // eslint-disable-next-line no-console
-    console.log();
+    Warn(`The configuration process requires an IAM credential with the following permissions:`);
+    Warn(`  - ${Configurator.document.Statement[0].Action.join(`\n  - `)}\n`);
 
     return collectKeyDetails()
         .then(answers => confirmS3Trigger(answers))
         .then(answers => addRoleToIAM(answers))
         .then(data => createLambdaFunction(data.answers, data.role))
         .catch(err => {
-            // eslint-disable-next-line no-console
-            console.error(err);
-            // eslint-disable-next-line no-console
-            console.log(`\nlambduh aws-install could not be completed at this time.`);
+            Err(err);
+            Err(`\nlambduh aws-install could not be completed at this time.`);
         });
 }
 

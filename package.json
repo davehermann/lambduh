@@ -11,7 +11,8 @@
     "aws-sdk": "^2.399.0",
     "fs-extra": "^7.0.1",
     "inquirer": "^6.2.2",
-    "mime-types": "^2.1.21"
+    "mime-types": "^2.1.21",
+    "multi-level-logger": "^1.0.0"
   },
   "devDependencies": {
     "eslint": "^5.13.0"

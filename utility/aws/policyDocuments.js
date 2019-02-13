@@ -14,8 +14,6 @@ const assumeRoleLambda = {
     },
 };
 
-module.exports.TrustedEntity = assumeRoleLambda;
-
 const loggingPolicy = {
     name: `Cloudwatch Logs`,
     description: `Create logs, and write to logging`,
@@ -139,6 +137,33 @@ const snsReporting = {
     },
 };
 
+const configuratorPolicy = {
+    name: `Configurator Policy`,
+    description: `Permissions necessary for running the aws-install process`,
+    document: {
+        Version: `2012-10-17`,
+        Statement: [
+            {
+                Effect: `Allow`,
+                Action: [
+                    `iam:CreateRole`,
+                    `iam:PassRole`,
+                    `iam:PutRolePolicy`,
+                    `lambda:AddPermission`,
+                    `lambda:CreateFunction`,
+                    `s3:GetBucketLocation`,
+                    `s3:ListAllMyBuckets`,
+                    `s3:PutBucketNotification`
+                ],
+                Resource: [
+                    `*`
+                ]
+            }
+        ]
+    }
+};
+
+module.exports.TrustedEntity = assumeRoleLambda;
 module.exports.PermissionSet = [
     loggingPolicy,
     s3TriggerBucket,
@@ -146,3 +171,4 @@ module.exports.PermissionSet = [
     apiGatewayApis,
     snsReporting,
 ];
+module.exports.Configurator = configuratorPolicy;

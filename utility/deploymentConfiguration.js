@@ -1,6 +1,10 @@
+// Node Modules
+const path = require(`path`);
+
+// NPM Modules
 const fs = require(`fs-extra`),
     inquirer = require(`inquirer`),
-    path = require(`path`);
+    { Warn } = require(`multi-level-logger`);
 
 const _configFilePath = path.join(process.cwd(), `lamb-duh.deployment.json`);
 
@@ -10,8 +14,7 @@ const _configFilePath = path.join(process.cwd(), `lamb-duh.deployment.json`);
 function loadExistingFile() {
     return fs.readFile(_configFilePath)
         .then(contents => {
-            // eslint-disable-next-line no-console
-            console.log(`Existing configuration found.\nUsing existing values for defaults.\n`);
+            Warn(`Existing configuration found.\nUsing existing values for defaults.\n`);
             return JSON.parse(contents);
         })
         // eslint-disable-next-line no-unused-vars

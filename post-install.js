@@ -1,18 +1,22 @@
+// Node Modules
 const { spawn } = require(`child_process`),
     path = require(`path`);
 
-let useDirectory = path.join(__dirname, `src`);
+// NPM Modules
+const { IncludeTimestamp, Warn, Err } = require(`multi-level-logger`);
 
-/* eslint-disable no-console */
+const _useDirectory = path.join(__dirname, `src`);
+
+IncludeTimestamp(false);
 
 function spawnProcess(command, parameters, options) {
     return new Promise(resolve => {
         let processHost = spawn(command, parameters, options);
         processHost.stdout.on(`data`, data => {
-            console.log(data.toString());
+            Warn(data.toString());
         });
         processHost.stderr.on(`data`, data => {
-            console.error(data.toString());
+            Err(data.toString());
         });
         processHost.on(`close`, () => {
             resolve();
@@ -21,18 +25,18 @@ function spawnProcess(command, parameters, options) {
 }
 
 function installNpm() {
-    console.log(`Installing NPM modules for Lambda deployment package...`);
+    Warn(`Installing NPM modules for Lambda deployment package...`);
 
-    return spawnProcess(`npm`, [`install`, `--loglevel`, `error`], { cwd: useDirectory })
+    return spawnProcess(`npm`, [`install`, `--loglevel`, `error`], { cwd: _useDirectory })
         .then(() => {
-            console.log(`... NPM install complete`);
+            Warn(`... NPM install complete`);
         });
 }
 
 function buildLambduh() {
-    console.log(`Compressing Lamb-duh for deployment to Lambda`);
+    Warn(`Compressing Lamb-duh for deployment to Lambda`);
 
-    return spawnProcess(`node`, [`buildForLambda.js`], { cwd: useDirectory });
+    return spawnProcess(`node`, [`buildForLambda.js`], { cwd: _useDirectory });
 }
 
 installNpm()

@@ -1,7 +1,11 @@
+// Node Modules
+const path = require(`path`);
+
+// NPM Modules
 const aws = require(`aws-sdk`),
     fs = require(`fs-extra`),
     mime = require(`mime-types`),
-    path = require(`path`);
+    { Warn, Err } = require(`multi-level-logger`);
 
 /**
  * Find the utility configuration file anywhere up the current path
@@ -42,13 +46,10 @@ function readDeploymentConfiguration() {
         })
         // eslint-disable-next-line no-unused-vars
         .catch(err => {
-            // eslint-disable-next-line no-console
-            console.error(err);
+            Err(err);
 
-            // eslint-disable-next-line no-console
-            console.error(`No lamb-duh.deployment.json file could be found in ${process.cwd()} or in any path above.`);
-            // eslint-disable-next-line no-console
-            console.error(`Run "lambduh init" from the root directory of your application.`);
+            Err(`No lamb-duh.deployment.json file could be found in ${process.cwd()} or in any path above.`);
+            Err(`Run "lambduh init" from the root directory of your application.`);
 
             return null;
         });
@@ -68,8 +69,7 @@ function sendToS3(config) {
             ContentType: mimeType,
         };
 
-    // eslint-disable-next-line no-console
-    console.log(`Uploading to S3...`);
+    Warn(`Uploading to S3...`);
 
     // Upload the stream
     return new Promise((resolve, reject) => {
@@ -81,13 +81,11 @@ function sendToS3(config) {
         });
 
         uploader.on(`httpUploadProgress`, (progress) => {
-            // eslint-disable-next-line no-console
-            console.log(`...${(100 * progress.loaded / progress.total).toFixed(2)}%`);
+            Warn(`...${(100 * progress.loaded / progress.total).toFixed(2)}%`);
         });
     })
         .then(data => {
-            // eslint-disable-next-line no-console
-            console.log(`... upload complete to ${data.Bucket}/${data.Key} (ETag: ${data.ETag})`);
+            Warn(`... upload complete to ${data.Bucket}/${data.Key} (ETag: ${data.ETag})`);
         });
 }
 
