@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const { CreateDeploymentConfiguration } = require(`./deploymentConfiguration`),
+const { ConfigureAWS } = require(`./awsConfiguration`),
+    { CreateDeploymentConfiguration } = require(`./deploymentConfiguration`),
     { DeployPackage } = require(`./deployPackage`),
     { ShowHelp } = require(`./help`);
 
@@ -31,6 +32,15 @@ function parseArguments() {
             case `deploy`:
                 actions.push({ description: `Starting deployment`, action: DeployPackage });
                 break;
+
+            case `aws-install`:
+                if ((argsArray.length > 0) && (argsArray[0] == `help`)) {
+                    actions.push({ action: ShowHelp, options: `aws-install` });
+                    // Consume the next argument
+                    argsArray.shift();
+                } else
+                    actions.push({ description: `Configuring AWS for Lamb-duh`, action: ConfigureAWS });
+                break;
         }
     }
 
@@ -55,7 +65,7 @@ function runActions(remainingActions, isFirst) {
             console.log((``).padStart(nextAction.description.length, `-`));
         }
 
-        return nextAction.action()
+        return nextAction.action(nextAction.options)
             .then(() => runActions(remainingActions));
     } else
         return Promise.resolve();

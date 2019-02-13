@@ -56,7 +56,7 @@ function readDeploymentConfiguration() {
 
 function sendToS3(config) {
     if (!!config.credentialsProfile)
-        process.env.AWS_PROFILE = config.credentialsProfile;
+        aws.config.credentials = new aws.SharedIniFileCredentials({ profile: config.credentialsProfile });
 
     let mimeType = mime.lookup(path.extname(config.s3Key)),
         s3 = new aws.S3({ apiVersion: `2006-03-01` }),
