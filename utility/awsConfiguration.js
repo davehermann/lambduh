@@ -6,7 +6,8 @@ const aws = require(`aws-sdk`),
 // Application Modules
 const { AddRole } = require(`./aws/addRole`),
     { CreateLambdaFunction } = require(`./aws/createFunction`),
-    { Configurator } = require(`./aws/policyDocuments`);
+    { Configurator } = require(`./aws/policyDocuments`),
+    { GetS3TriggerBucket } = require(`./aws/s3`);
 
 /**
  * Ask the user for critical details about their configuration
@@ -29,22 +30,24 @@ function collectKeyDetails() {
             message: `Lamb-duh function name in Lambda:`,
             default: (answers) => { return answers.iamRoleName; },
         },
-        {
-            name: `s3TriggerBucket`,
-            message: `Bucket Name:`,
-            prefix: `The name of an existing S3 bucket where you will place the compressed file to trigger Lamb-duh\n`,
-            validate: (input) => {
-                if (input.trim().length == 0)
-                    return `S3 Bucket name required`;
+    ];
 
-                return true;
-            },
-        },
+    return inquirer.prompt(questions)
+        .then(answers => {
+            if (answers.credentialsProfile != `default`)
+                aws.config.credentials = new aws.SharedIniFileCredentials({ profile: answers.credentialsProfile });
+
+            return answers;
+        });
+}
+
+function confirmStart(originalAnswers) {
+    let questions = [
         {
             type: `confirm`,
             name: `ready`,
             default: false,
-            message: `Ready to create IAM role, and S3-integrated Lambda function:`,
+            message: `Ready to create IAM role, and S3-integrated Lambda function, with above values?`,
         }
     ];
 
@@ -56,73 +59,7 @@ function collectKeyDetails() {
                 process.exit();
             }
 
-            if (answers.credentialsProfile != `default`)
-                aws.config.credentials = new aws.SharedIniFileCredentials({ profile: answers.credentialsProfile });
-
-            return answers;
-        });
-}
-
-/**
- * Confirm the existence of the S3 triggering bucket before continuing
- * @param {Object} answers - The responses to configuration questions asked of the user
- * @param {Boolean} skipValidation 
- */
-function confirmS3Trigger(answers, skipValidation) {
-    let s3 = new aws.S3({ apiVersion: `2006-03-01` }),
-        pGetBuckets = Promise.resolve();
-
-    if (!skipValidation) {
-        Warn(`\nConfirming S3 bucket "${answers.s3TriggerBucket}" exists...`);
-        pGetBuckets = s3.listBuckets().promise();
-    }
-
-    return pGetBuckets
-        .then(data => {
-            let foundBucket = null;
-
-            if (!skipValidation) {
-                foundBucket = data.Buckets.find(bucket => { return (bucket.Name == answers.s3TriggerBucket); });
-
-                if (!!foundBucket)
-                    return Promise.resolve(answers);
-                else
-                    Warn(`\n...bucket NOT FOUND in S3`);
-            }
-
-            if (!foundBucket) {
-                Warn(`-----`),
-                Warn(`This configuration process WILL NOT create the S3 triggering bucket for you.`);
-                Warn(`Please ensure a bucket exists for receiving the compressed deployment packages before continuing.`);
-                Warn(`-----`);
-
-                let questions = [
-                    {
-                        type: `list`,
-                        name: `bucketConfirmation`,
-                        message: `Confirm when the bucket exists to continue:`,
-                        choices: [`Yes`, `No`],
-                        default: `No`,
-                    }
-                ];
-
-                return inquirer.prompt(questions)
-                    .then(confirmed => confirmS3Trigger(answers, (confirmed.bucketConfirmation == `No`)));
-            }
-        })
-        .then(answers => {
-            Warn(`...Bucket found in S3`);
-
-            // Query the region
-            return s3.getBucketLocation({ Bucket: answers.s3TriggerBucket }).promise()
-                .then(data => {
-                    // Update the configuration to use the region detected (default to N. Virginia for an empty string)
-                    aws.config.update({ region: data.LocationConstraint || `us-east-1` });
-
-                    Warn(`Configured to use S3 region of ${data.LocationConstraint || `us-east-1`}`);
-
-                    return answers;
-                });
+            return originalAnswers;
         });
 }
 
@@ -158,7 +95,8 @@ function displayPermissions() {
 function configureAWS() {
     return displayPermissions()
         .then(() => collectKeyDetails())
-        .then(answers => confirmS3Trigger(answers))
+        .then(answers => GetS3TriggerBucket(answers))
+        .then(answers => confirmStart(answers))
         .then(answers => AddRole(answers))
         .then(data => CreateLambdaFunction(data.answers, data.role))
         .catch(err => {
