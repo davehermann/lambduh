@@ -4,78 +4,10 @@ const fs = require(`fs`),
 
 // NPM Modules
 const aws = require(`aws-sdk`),
-    { Warn, Err } = require(`multi-level-logger`);
+    { Warn } = require(`multi-level-logger`);
 
 // Application Modules
-const { Throttle } = require(`../../src/tasks/apiGateway/throttle`);
-
-/**
- * (Re)try creating the Lambda function while waiting for IAM to replicate the role
- * @param {Object} configuration - The params object for lambda.createFunction()
- * @param {Number | undefined} retryCount - Track the number of retries
- * @param {Object | undefined} creationData - The function creation data after successful completion
- */
-function retryableLambdaCreation(configuration, retryCount, creationData) {
-    const lambda = new aws.Lambda({ apiVersion: `2015-03-31` });
-
-    if (retryCount === undefined)
-        retryCount = 0;
-
-    if ((retryCount < 12) && !creationData) {
-        return lambda.createFunction(configuration).promise()
-            .then(data => {
-                return retryableLambdaCreation(null, 100, data);
-            })
-            .catch(err => {
-                // Increment the retry count
-                retryCount++;
-
-                // Note the error
-                Err(`${err.code}: ${err.message}`);
-
-                return Throttle(null, 5000)
-                    .then(() => retryableLambdaCreation(configuration, retryCount));
-            });
-    } else {
-        if (!!creationData)
-            return Promise.resolve(creationData);
-
-        throw `Cannot complete Lambda function creation`;
-    }
-}
-
-/**
- * (Re)try the addition of notification events for triggering Lambda from S3
- * @param {Object} triggerParams - The params object for s3.putBucketNotificationConfiguration
- * @param {Number | undefined} retryCount - Track the number of retries
- * @param {Object | undefined} creationData - The function creation data after successful completion
- */
-function retryLambdaTriggering(triggerParams, retryCount, creationData) {
-    const s3 = new aws.S3({ apiVersion: `2006-03-01` });
-
-    if (retryCount === undefined)
-        retryCount = 0;
-
-    if ((retryCount < 12) && !creationData) {
-        return s3.putBucketNotificationConfiguration(triggerParams).promise()
-            .then(data => retryLambdaTriggering(null, 100, data))
-            .catch(err => {
-                // Increment the retry count
-                retryCount++;
-
-                // Note the error
-                Err(`${err.code}: ${err.message}`);
-
-                return Throttle(null, 5000)
-                    .then(() => retryLambdaTriggering(triggerParams, retryCount));
-            });
-    } else {
-        if (!!creationData)
-            return Promise.resolve(creationData);
-
-        throw `Cannot complete Lambda-S3 event trigger connection`;
-    }
-}
+const { RetryOnFailure } = require(`../utilities`);
 
 /**
  * Add an invoke permission to a Lambda function from an S3 bucket
@@ -102,11 +34,12 @@ function addS3InvokeLambdaPermission(FunctionName, SourceArn) {
  * @param {string} role - Role creation data for the IAM role
  */
 function createLambdaFunction(answers, role) {
+    const lambda = new aws.Lambda({ apiVersion: `2015-03-31` });
 
     Warn(`Deploying code to Lambda`);
 
     return new Promise((resolve, reject) => {
-        fs.readFile(path.join(__dirname, `../Lambda Deployment Package.zip`), (err, contents) => {
+        fs.readFile(path.join(__dirname, `../../Lambda Deployment Package.zip`), (err, contents) => {
             if (!!err)
                 reject(err);
             else
@@ -124,9 +57,7 @@ function createLambdaFunction(answers, role) {
                 Runtime: `nodejs8.10`,
             };
 
-            Warn(`This will retry every 5 seconds, up to 1 minute, due to delays in IAM replication`);
-
-            return retryableLambdaCreation(newLambdaFunction);
+            return RetryOnFailure(lambda, `createFunction`, newLambdaFunction, `IAM replication`, `Lambda function creation`);
         })
         .then(lambdaFunction => {
             Warn(`...Function "${lambdaFunction.FunctionName}" deployed`);
@@ -140,6 +71,8 @@ function createLambdaFunction(answers, role) {
                 .then(() => { return lambdaFunction; });
         })
         .then(lambdaFunction => {
+            const s3 = new aws.S3({ apiVersion: `2006-03-01` });
+
             Warn(`Configuring S3 triggers for "${answers.s3TriggerBucket}"`);
 
             let triggerParams = {
@@ -183,9 +116,7 @@ function createLambdaFunction(answers, role) {
                 }
             };
 
-            Warn(`This will retry every 5 seconds, up to 1 minute, due to delays in Lambda replication`);
-
-            return retryLambdaTriggering(triggerParams);
+            return RetryOnFailure(s3, `putBucketNotificationConfiguration`, triggerParams, `Lambda function detection`, `Lambda-S3 event trigger connection`);
         })
         .then(() => {
             Warn(`Triggers added`);

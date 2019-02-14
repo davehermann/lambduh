@@ -16,9 +16,9 @@ function collectKeyDetails() {
     let questions = [
         {
             name: `credentialsProfile`,
-            message: `Profile name in your AWS Shared Credentials`,
+            message: `AWS Shared Credentials profile:`,
             default: `default`,
-            suffix: ` [if different from "default"]:`,
+            prefix: `Leave as "default" if you use environment variables or have only one profile\n`,
         },
         {
             name: `iamRoleName`,
@@ -53,7 +53,7 @@ function confirmStart(originalAnswers) {
 
     return inquirer.prompt(questions)
         .then(answers => {
-            if (!answers.confirm) {
+            if (!answers.ready) {
                 Warn(`Re-run this process when you are ready to proceed.`);
 
                 process.exit();
