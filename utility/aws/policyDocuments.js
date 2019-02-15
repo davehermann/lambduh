@@ -149,11 +149,16 @@ const configuratorPolicy = {
                     `iam:CreateRole`,
                     `iam:PassRole`,
                     `iam:PutRolePolicy`,
+                    `iam:TagRole`,
                     `lambda:AddPermission`,
                     `lambda:CreateFunction`,
+                    `lambda:TagResource`,
                     `s3:GetBucketLocation`,
+                    `s3:GetBucketNotification`,
+                    `s3:GetBucketTagging`,
                     `s3:ListAllMyBuckets`,
-                    `s3:PutBucketNotification`
+                    `s3:PutBucketNotification`,
+                    `s3:PutBucketTagging`
                 ],
                 Resource: [
                     `*`

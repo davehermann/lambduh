@@ -4,6 +4,7 @@ const aws = require(`aws-sdk`),
 
 // Application Modules
 const { PermissionSet, TrustedEntity } = require(`./policyDocuments`),
+    { LambduhObjectTag } = require(`../utilities`),
     { Throttle } = require(`../../src/tasks/apiGateway/throttle`);
 
 /**
@@ -62,6 +63,17 @@ function addRoleToIAM(answers) {
             return { roleName: data.Role.RoleName, arn: data.Role.Arn };
         })
         .then(role => addPermissionsToIAMRole(role, answers, PermissionSet))
+        // Add Tags
+        .then(role => {
+            Warn(`Tagging "${role.roleName}"`);
+
+            let Tags = [];
+            for (let prop in LambduhObjectTag)
+                Tags.push({ Key: prop, Value: LambduhObjectTag[prop] });
+
+            return iam.tagRole({ RoleName: role.roleName, Tags }).promise()
+                .then(() => { return role; });
+        })
         .then(role => Promise.resolve({ answers, role }));
     // Will need all known deploy-into buckets
 }
