@@ -1,20 +1,23 @@
 {
-  "name": "lamb_duh",
+  "name": "lamb-duh",
   "version": "2.0.0",
   "description": "Stupid name. Stupidly easy Lambda deployment.",
   "private": true,
   "scripts": {
-    "build": "node buildForLambda.js"
+    "postinstall": "node ./post-install.js"
   },
-  "main": "deploy.js",
-  "author": "Dave Hermann <hermann.dp+github@gmail.com>",
+  "author": "Dave Hermann",
   "dependencies": {
-    "builtin-modules": "^2.0.0",
-    "fs-extra": "^5.0.0",
-    "jszip": "^3.1.5",
-    "luxon": "^1.0.0",
-    "mime-types": "^2.1.18",
-    "tar": "^4.4.1",
-    "uuid": "^3.2.1"
+    "aws-sdk": "^2.399.0",
+    "fs-extra": "^7.0.1",
+    "inquirer": "^6.2.2",
+    "mime-types": "^2.1.21",
+    "multi-level-logger": "^1.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.13.0"
+  },
+  "bin": {
+    "lambduh": "./utility/index.js"
   }
 }

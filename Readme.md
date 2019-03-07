@@ -4,7 +4,7 @@
 ## TL;DR?
 
 1. Write your application using any directory structure that works for you
-    + All of your AWS Lambda functions must use **relative** paths for modules (and their modules need relative paths)
+    + All of your AWS Lambda functions and modules must use **relative** paths for `require()` of local modules
 1. Include a configuration JSON file in the root of your application
     + Defines the S3, Lambda, and/or API Gateway steps
 1. Archive the entire application
@@ -14,10 +14,11 @@
 
 ## v1 to v2
 #### Major Changes
++ Lambda installation, local configuration and deployment **now via a CLI**
 + Complete, from-scratch rewrite of the codebase
 + **Lamb-duh** leverages AWS services even more to boost efficiency
 + Large deployments are considerably faster
-+ Deployments are now versioned (**off by default**), which allows for <u>not</u> breaking browser applications that may be cached.
++ Deployments are now versioned (**off by default**), which allows for <u>not</u> breaking users browser applications that may be cached.
     + S3 deployments can have the endpoint string automatically updated
     + For local testing/manual updates: following deployment the log will contain the correct endpoint, and using the SNS notification will supply it via SNS.
     + The number of saved aliases can be controlled, both as total numbers and amount of time
@@ -46,9 +47,8 @@ Lamb-duh no longer supports using a default configuration.
 You're a developer.
 You have a way of working with code that works for you.
 Going serverless should work that way too.
-AWS has a plethora of code tools (Pipeline, Code Deploy) but they don't work together *that* well and they're all focused on **server** deployment.
-Wouldn't it be great to deploy **serverless** as easily as Code Deploy?
-We need a one-stop serverless deployment, preferably built into AWS itself.
+AWS has a plethora of code tools (Pipeline, Code Deploy, Cloud Formation) but they don't work together *that* well and many are exclusively focused on **server** deployment.
+Wouldn't it be great to deploy **serverless** as easily as Code Deploy to a server?
 
 **Lamb-duh** uses AWS Lambda to deploy every part of an application in one step, while keeping the same application structure you're comfortable with.
 
@@ -56,19 +56,26 @@ Whether you're frontend, backend, or full-stack, Lamb-duh has something to help 
 
 ## Is there a catch?
 
-Lamb-duh won't hold your hand the way other serverless frameworks might.
-You'll have to create your own IAM roles, both for Lamb-duh and the functions it deploys.
-Don't worry, all of the necessary permissions for Lamb-duh are below, but Lamb-duh assumes only you know best for your own application(s), and suggests never giving a piece of code enough control to write IAM roles and permissions for you.
+Lamb-duh can do as much, or as little, of the process to get you up and running as you want.
+Hate to have an application setting IAM permissions?
+All of Lamb-duh's requirements are spelled out explicitly.
+Don't care, or want to know, anything about the internals?
+Lamb-duh can take care of the initial configuration, and repeated deployments of your application.
 
-The down side is that you will have to fill in some IAM role permissions, but the upside is that it's **one time only, to cover all current and future applications you deploy via Lamb-duh** and your deployment process is as simple as placing an archive in an S3 bucket.
+If you do like to keep control, the down side is that you will have to fill in some IAM role permissions, but the upside is that it's **one time only, to cover all current and future applications you deploy via Lamb-duh**, and that deployment process is as simple as placing a compressed archive file in an S3 bucket.
 
 ## Usage
 
-### Package <u>this</u> application
+### Package <u>this</u> application for Lambda
 1. Run `npm install` to pull in all dependencies
-1. Run `npm run build` to generate a zip archive (*Lambda Deployment Package.zip*) that you can upload to AWS Lambda
-1. Create a function in AWS Lambda, and upload the *zip archive* there
-1. Use a role for the function that includes all permissions outlined in **IAM Configuration** below
+    + A `postinstall` task will trigger to complete dependency installation and generate a zip archive (*Lambda Deployment Package.zip*) of the Lamb-duh code to run as an AWS Lambda function
+1. Either
+    + Manually configure
+        1. Create a new function in AWS Lambda
+        1. Upload the *zip archive* there
+        1. Configure a role according to the permissions outlined in this documentation
+        1. Add triggers to an S3 bucket you will be dropping your deployment archives into
+    + Or, run `lambduh aws-install` and let Lamb-duh take care of the setup for you
 
 ### Include JSON configuration in <u>your</u> application
 
