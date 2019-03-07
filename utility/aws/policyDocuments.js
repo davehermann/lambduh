@@ -137,9 +137,38 @@ const snsReporting = {
     },
 };
 
+const s3WriteTask = {
+    name: `S3 Write to {TARGET_BUCKET_NAME}`,
+    description: `Write, and add CORS/ETag data for any files to be copied during an S3 task`,
+    document: {
+        Version: `2012-10-17`,
+        Statement: [
+            {
+                Effect: `Allow`,
+                Action: [
+                    `s3:ListBucket`,
+                ],
+                Resource: [
+                    `arn:aws:s3:::{TARGET_BUCKET_NAME}`,
+                ],
+            },
+            {
+                Effect: `Allow`,
+                Action: [
+                    `s3:DeleteObject`,
+                    `s3:PutObject`,
+                ],
+                Resource: [
+                    `arn:aws:s3:::{TARGET_BUCKET_NAME}/*`,
+                ],
+            },
+        ],
+    },
+};
+
 const configuratorPolicy = {
     name: `Configurator Policy`,
-    description: `Permissions necessary for running the aws-install process`,
+    description: `running the aws-install process`,
     document: {
         Version: `2012-10-17`,
         Statement: [
@@ -168,6 +197,29 @@ const configuratorPolicy = {
     }
 };
 
+const addS3Policy = {
+    name: `S3 Permissions Policy`,
+    description: `running the S3 task add permissions process`,
+    document: {
+        Version: `2012-10-17`,
+        Statement: [
+            {
+                Effect: `Allow`,
+                Action: [
+                    "iam:GetRole",
+                    "iam:GetRolePolicy",
+                    "iam:ListRolePolicies",
+                    "iam:ListRoles",
+                    "iam:PutRolePolicy"
+                ],
+                Resource: [
+                    `*`
+                ]
+            }
+        ]
+    },
+};
+
 module.exports.TrustedEntity = assumeRoleLambda;
 module.exports.PermissionSet = [
     loggingPolicy,
@@ -177,3 +229,5 @@ module.exports.PermissionSet = [
     snsReporting,
 ];
 module.exports.Configurator = configuratorPolicy;
+module.exports.S3Permissions = addS3Policy;
+module.exports.S3WriteTo = s3WriteTask;

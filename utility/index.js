@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 // NPM Modules
-const { IncludeTimestamp, InitializeLogging, Warn } = require(`multi-level-logger`);
+const { IncludeTimestamp, InitializeLogging, Warn, Err } = require(`multi-level-logger`);
 
 // Application Modules
 const { ConfigureAWS } = require(`./awsConfiguration`),
     { CreateDeploymentConfiguration } = require(`./deploymentConfiguration`),
     { DeployPackage } = require(`./deployPackage`),
-    { ShowHelp } = require(`./help`);
+    { ShowHelp } = require(`./help`),
+    { AddS3TaskPermissions } = require(`./s3TaskPermissions`);
 
 /**
  * Return a usable array of the command line parameters
@@ -45,6 +46,10 @@ function parseArguments() {
                 } else
                     actions.push({ description: `Configuring AWS for Lamb-duh`, action: ConfigureAWS });
                 break;
+
+            case `add-s3-permissions`:
+                actions = [{ description: `Adding permissions to S3`, action: AddS3TaskPermissions }];
+                break;
         }
     }
 
@@ -76,4 +81,6 @@ InitializeLogging(`info`);
 IncludeTimestamp(false);
 
 parseArguments()
-    .then(actions => runActions(actions, true));
+    .then(actions => runActions(actions, true))
+    // Catch any unhandled errors
+    .catch(err => Err(err, true));

@@ -8,8 +8,24 @@ const { PermissionSet, TrustedEntity } = require(`./policyDocuments`),
     { Throttle } = require(`../../src/tasks/apiGateway/throttle`);
 
 /**
+ * Add a policy to a role, and delay before continuing
+ * @param {String} RoleName - name of role
+ * @param {String} PolicyName - name of policy
+ * @param {JSON} PolicyDocument - policy to be applied
+ */
+function addInlinePoliciesToIAMRole(RoleName, PolicyName, PolicyDocument) {
+    const iam = new aws.IAM({ apiVersion: `2010-05-08` });
+
+    Warn(`Adding permissions for ${PolicyName} to "${RoleName}"`);
+
+    return iam.putRolePolicy({ RoleName, PolicyName, PolicyDocument }).promise()
+        // Throttle next request in case AWS ever throttles API
+        .then(() => Throttle(null, 250));
+}
+
+/**
  * Add each set of permissions to an IAM role
- * @param {string} role - Role creation data for the IAM role
+ * @param {Object} role - Role creation data for the IAM role
  * @param {Object} answers - The responses to configuration questions asked of the user
  * @param {Array<Object>} remainingPermissions - List of permissions still to add
  */
@@ -19,20 +35,11 @@ function addPermissionsToIAMRole(role, answers, remainingPermissions) {
     if (remainingPermissions.length > 0) {
         let policy = remainingPermissions.shift();
 
-        Warn(`Adding permissions for ${policy.name} to "${role.roleName}"`);
-
         // Add all necessary permissions in-line
-        const policyParams = {
-            PolicyDocument:
-                JSON.stringify(policy.document)
-                    .replace(/\{TRIGGER_BUCKET_NAME\}/g, answers.s3TriggerBucket),
-            PolicyName: policy.name.replace(/ /g, `_`),
-            RoleName: role.roleName,
-        };
+        const policyDocument = JSON.stringify(policy.document)
+            .replace(/\{TRIGGER_BUCKET_NAME\}/g, answers.s3TriggerBucket);
 
-        return iam.putRolePolicy(policyParams).promise()
-            // Throttle next request in case AWS ever throttles API
-            .then(() => Throttle(null, 250))
+        return addInlinePoliciesToIAMRole(role.roleName, policy.name.replace(/ /g, `_`))
             .then(() => addPermissionsToIAMRole(role, answers, remainingPermissions));
 
     }
@@ -79,3 +86,4 @@ function addRoleToIAM(answers) {
 }
 
 module.exports.AddRole = addRoleToIAM;
+module.exports.AddInlinePoliciesToIAMRole = addInlinePoliciesToIAMRole;

@@ -29,12 +29,12 @@ function loadExistingFile() {
  * @param {Object} valueDefaults - Default values from a prior config generation
  */
 function queryUser(valueDefaults) {
-    let { localFile, s3Bucket, s3Key, credentialsProfile } = valueDefaults;
+    let { localFile, s3Bucket, s3Key, credentialsProfile, lambduhConfigurationFile } = valueDefaults;
 
     const questions = [
         {
             name: `localFile`,
-            message: `Path to local deployment file:`,
+            message: `Relative path to compressed deployment archive file:`,
             default: localFile,
         },
         {
@@ -55,6 +55,11 @@ function queryUser(valueDefaults) {
             default: credentialsProfile || `default`,
             prefix: `\nLamb-duh uses AWS Shared Credentials for permissions.\nThe IAM credential will need 'PutObject' permissions for the destination bucket.\nSearch for "AWS Shared Credentials" for more information.\n`,
         },
+        {
+            name: `lambduhConfigurationFile`,
+            message: `Relative path to Lamb-duh's configuration`,
+            default: lambduhConfigurationFile || `lamb-duh.configuration.json`
+        }
     ];
 
     return inquirer

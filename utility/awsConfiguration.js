@@ -7,19 +7,14 @@ const aws = require(`aws-sdk`),
 const { AddRole } = require(`./aws/addRole`),
     { CreateLambdaFunction } = require(`./aws/createFunction`),
     { Configurator } = require(`./aws/policyDocuments`),
-    { GetS3TriggerBucket } = require(`./aws/s3`);
+    { GetS3TriggerBucket } = require(`./aws/s3`),
+    { UseProfile } = require(`./configuration/credentials`);
 
 /**
  * Ask the user for critical details about their configuration
  */
 function collectKeyDetails() {
     let questions = [
-        {
-            name: `credentialsProfile`,
-            message: `AWS Shared Credentials profile:`,
-            default: `default`,
-            prefix: `Leave as "default" if you use environment variables or have only one profile\n`,
-        },
         {
             name: `iamRoleName`,
             message: `New IAM role:`,
@@ -32,15 +27,14 @@ function collectKeyDetails() {
         },
     ];
 
-    return inquirer.prompt(questions)
-        .then(answers => {
-            if (answers.credentialsProfile != `default`)
-                aws.config.credentials = new aws.SharedIniFileCredentials({ profile: answers.credentialsProfile });
-
-            return answers;
-        });
+    return inquirer.prompt(questions);
 }
 
+/**
+ * Confirm with the user before beginning the configuration process
+ * @param {Object} originalAnswers - answers to the prompted questions
+ * @returns {Object} The answers object if the user is proceeding
+ */
 function confirmStart(originalAnswers) {
     let questions = [
         {
@@ -63,37 +57,12 @@ function confirmStart(originalAnswers) {
         });
 }
 
-/**
- * Display the permissions necessary for running this process
- */
-function displayPermissions() {
-    Warn(`The configuration process requires an IAM credential with the following permissions:`);
-    Warn(`  - ${Configurator.document.Statement[0].Action.join(`\n  - `)}\n`);
-
-    let questions = [
-        {
-            type: `confirm`,
-            name: `showDoc`,
-            message: `View these permissions formatted as an IAM policy document?`,
-            default: false,
-        }
-    ];
-
-    return inquirer.prompt(questions)
-        .then(answers => {
-            if (answers.showDoc) {
-                Warn(Configurator.document);
-
-                Warn(`\nThe above JSON can be pasted in as a policy document on an IAM User/Group\n`);
-            }
-        });
-}
 
 /**
  * Completely configure AWS for usage of Lamb-duh
  */
 function configureAWS() {
-    return displayPermissions()
+    return UseProfile(Configurator)
         .then(() => collectKeyDetails())
         .then(answers => GetS3TriggerBucket(answers))
         .then(answers => confirmStart(answers))

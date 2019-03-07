@@ -31,10 +31,11 @@ function displayHelp(options) {
             + `\n`
             + `Commands\n`
             + `--------\n`
-            + `    init                 Generates a configuration file for deployment by asking a series of questions\n`
+            + `    init                 Generates a configuration file for the "deploy" command by asking a series of questions\n`
             + `    deploy               Copy compressed source file to destination S3 bucket\n`
             + `    aws-install [help]   Add Lamb-duh to AWS Lambda with S3-triggers, and all necessary permissions\n`
             + `                         - Including the "help" parameter will provide specifics, included actual permissions created\n`
+            + `    add-s3-permissions   Adds the permissions for any S3 tasks in a configuration task list to the Lamb-duh role in IAM\n`
         ;
 
     Warn(`${helpText}`);

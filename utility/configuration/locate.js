@@ -37,8 +37,13 @@ function readDeploymentConfiguration() {
             let { contents, remainingLocations } = foundFile,
                 config = JSON.parse(contents);
 
-            // Turn the local file path into an absolute path
-            config.localFile = path.join(remainingLocations.join(path.sep), config.localFile);
+            // Relative file paths in the configuration should be converted to absolute from the application root
+            const applicationRoot = remainingLocations.join(path.sep);
+
+            // Compressed deployment file
+            config.localFile = path.join(applicationRoot, config.localFile);
+            // Source for Lamb-duh processing
+            config.lambduhConfigurationFile = path.join(applicationRoot, config.lambduhConfigurationFile);
 
             return config;
         })
