@@ -28,7 +28,7 @@ function parseArguments() {
         let nextArg = argsArray.shift();
 
         switch (nextArg) {
-            case `init`:
+            case `deploy-init`:
                 // If any argument is "init", only run init
                 actions = [{ description: `Configuring for Deployment`, action: CreateDeploymentConfiguration }];
                 argsArray = [];
@@ -39,15 +39,10 @@ function parseArguments() {
                 break;
 
             case `aws-install`:
-                if ((argsArray.length > 0) && (argsArray[0] == `help`)) {
-                    actions.push({ action: ShowHelp, options: `aws-install` });
-                    // Consume the next argument
-                    argsArray.shift();
-                } else
-                    actions.push({ description: `Configuring AWS for Lamb-duh`, action: ConfigureAWS });
+                actions.push({ description: `Configuring AWS for Lamb-duh`, action: ConfigureAWS });
                 break;
 
-            case `add-s3-permissions`:
+            case `deploy-s3-permissions`:
                 actions = [{ description: `Adding permissions to S3`, action: AddS3TaskPermissions }];
                 break;
         }
