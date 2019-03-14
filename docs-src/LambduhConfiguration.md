@@ -267,8 +267,8 @@ For each function:
 | deployment<br />&nbsp;&nbsp;&nbsp;&nbsp;.versioningLimits<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.keep | no | Number | # of versions to maintain when deploying the same stage |
 | deployment<br />&nbsp;&nbsp;&nbsp;&nbsp;.versioningLimits<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.expirationHours | no | Number | Time, in hours, for expiring a version <ul><li>*Expiration time takes precedence over # to **keep***</li><li>*Lamb-duh <u>will not</u> delete a version until it has expired, even if there are more versions than the maximum to keep*</li></ul> |
 | cors | no | Map | Lamb-duh can automatically create an HTTP OPTIONS method of type **MOCK** method for all endpoints to support CORS<br />This value should be `{ "origin": "*" }` for all, or domain-specific for a single domain |
-| aliasNonEndpoints | no | Array<Map> | The set of non-endpoint Lambda functions to version<br/><br />*See [Non-endpoint definition](#non-endpoint-definition)* for available properties |
-| endpoints | no | Array<Map> | The set of endpoints to deploy<br/><br />*See [Endpoint definition](#endpoint-definition)* for available properties |
+| aliasNonEndpoints | no | Array&lt;Map&gt; | The set of non-endpoint Lambda functions to version<br/><br />*See [Non-endpoint definition](#non-endpoint-definition)* for available properties |
+| endpoints | no | Array&lt;Map&gt; | The set of endpoints to deploy<br/><br />*See [Endpoint definition](#endpoint-definition)* for available properties |
 
 ##### CORS definition
 | Property | Required | Type | Description |
@@ -290,8 +290,8 @@ For each function:
 | path | yes | String | The full path, including optional parameters, to the endpoint resource in API Gateway |
 | method | yes | String | The HTTP method for the endpoint |
 | functionName | yes | String | Name of function, in Lambda, to alias |
-| headers | no | Array<Map> | HTTP Headers to accept and pass through to the Lambda function<br/><br />*See [Endpoint Headers](#endpoint-headers)* for available properties |
-| parameters | no | Array<Map> | Query string paramters to accept and pass through to the Lambda function<br/><br />*See [Endpoint Parameters](#endpoint-parameters)* for available properties |
+| headers | no | Array&lt;Map&gt; | HTTP Headers to accept and pass through to the Lambda function<br/><br />*See [Endpoint Headers](#endpoint-headers)* for available properties |
+| parameters | no | Array&lt;Map&gt; | Query string paramters to accept and pass through to the Lambda function<br/><br />*See [Endpoint Parameters](#endpoint-parameters)* for available properties |
 | endpointConfiguration | no | Map | Additional object data to pass through to the Lambda function |
 
 ###### headers, parameters, endpointConfiguration, and request data
