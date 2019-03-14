@@ -4,8 +4,8 @@
   "description": "Stupid name. Stupidly easy Lambda deployment.",
   "private": true,
   "scripts": {
-    "docs:dev": "serve -l 8080 ./docs/.vuepress/dist",
-    "docs:build": "vuepress build docs",
+    "docs:host": "serve -l 8080 ./docs",
+    "docs:build": "vuepress build docs-src",
     "postinstall": "node ./post-install.js"
   },
   "author": "Dave Hermann",
