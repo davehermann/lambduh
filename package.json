@@ -4,6 +4,8 @@
   "description": "Stupid name. Stupidly easy Lambda deployment.",
   "private": true,
   "scripts": {
+    "docs:dev": "vuepress dev docs-src",
+    "docs:build": "vuepress build docs-src",
     "postinstall": "node ./post-install.js"
   },
   "author": "Dave Hermann",
@@ -15,7 +17,9 @@
     "multi-level-logger": "^1.0.0"
   },
   "devDependencies": {
-    "eslint": "^5.13.0"
+    "eslint": "^5.13.0",
+    "vuepress": "^0.14.10",
+    "webpack-dev-middleware": "^3.6.0"
   },
   "bin": {
     "lambduh": "./utility/index.js"
