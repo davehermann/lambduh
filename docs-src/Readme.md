@@ -5,7 +5,7 @@
 ## Introduction
 
 Lamb-duh is a serverless deployment tool for AWS serverless applications using NodeJS functions.
-Lamb-duh only needs source, compressed into an archive, and will `npm install`, and deploy to S3, Lambda, and even configure API Gateway.
+Lamb-duh only needs source, compressed into an archive, and will run `npm install`, and deploy to: S3, Lambda, and API Gateway.
 Lamb-duh doesn't care how you structure your application.
 
 1. Write your application using any directory structure that works for you
@@ -21,10 +21,12 @@ Lamb-duh doesn't care how you structure your application.
 You're a developer.
 You have a way of working with code that works for you.
 Going serverless should work that way too.
-AWS has a plethora of code tools (Pipeline, Code Deploy, Cloud Formation), but they don't work together *that* well and many are exclusively focused on **server** deployment.
-Wouldn't it be great to deploy **serverless** as easily as Code Deploy to a server?
+There are other serverless management frameworks, and AWS has a number of tools as well.
+> Why can't I just use my normal code structure, and deploy an application?
 
-**Lamb-duh** uses AWS Lambda to deploy every part of an application in one step, while keeping the same application structure you're comfortable with.
+With **Lamb-duh**, you can!
+
+Lamb-duh uses AWS Lambda to deploy every part of an application in one step, while keeping the same application structure you're comfortable with.
 
 Whether you're frontend, backend, or full-stack, Lamb-duh has something to help deploy complex web (or any other S3/Lambda/API Gateway) applications.
 
@@ -32,10 +34,10 @@ Whether you're frontend, backend, or full-stack, Lamb-duh has something to help 
 
 Lamb-duh can do as much, or as little, of the process to get you up and running as you want.
 
-### Do you want a CLI application to handle heavy lifting?
+### Do you want a CLI utility to handle heavy lifting?
 
-Lamb-duh has a CLI application that can:
-+ Take care of the entire initial configuration
+Lamb-duh has a CLI utility that can:
++ Take care of the entire AWS configuration
     + Create a Lambda function
     + Attach triggers to an S3 bucket for the function in Lambda
     + Create an IAM role

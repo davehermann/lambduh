@@ -8,7 +8,7 @@
     + S3 deployments can have the endpoint string automatically updated
     + For local testing/manual updates: following deployment the log will contain the correct endpoint, and using the SNS notification will supply it via SNS.
     + The number of saved aliases can be controlled, both as total numbers and amount of time
-    + See below for more details and how to turn the feature off
+    + See **versioningLimits** in [Lamb-duh configuration: API Gateway Tasks](./LambduhConfiguration.md#api-gateway-tasks) for more details and how to turn the feature off
 + Start/Completion notifications now provided (via SNS)
 
 ## Breaking Changes
@@ -18,10 +18,10 @@ Any breaking changes are below.
 1. Configuration files must be included in the triggering archive.
 Lamb-duh no longer supports using a default configuration.
 1. *IAM Roles*
-    + the *s3:ListBucket* permission is now required for the bucket where the code archive is placed to start the deployment process
+    + the *s3:ListBucket* permission is now required for the triggering bucket where the code archive is placed to start the deployment process
     + The *lambda:DeleteAlias* permission is now required
 1. *Lambda Tasks*
-    + To keep with AWS standards, function handlers now default to `index` instead of the v1 required `lambda`.
+    + To keep with AWS standards, function handlers now default to `index` instead of the Lamb-duh v1.x required `lambda`.
     A `handler` property has been added to both the function definition, and the task defaults, and can now be defined for all task functions or per-function.
         + To maintain compatibility, add `"handler": "lambda"` as a setting for all existing Lambda task in the `defaults` object.
 1. *API Gateway Tasks*

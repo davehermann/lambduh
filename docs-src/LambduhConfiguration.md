@@ -6,9 +6,9 @@
 
 The file should be named `lamb-duh.configuration.json` and should appear at the root of your compressed deployment archive.
 
-## Root Structure
+[A complete example JSON configuration can be found here](./ExampleConfiguration.md), and is the complete JSON document for the structure and detailed descriptions below.
 
-The JSON data is an object with four properties, only two of which are required
+## Root Structure
 
 ```json
 {
@@ -32,7 +32,10 @@ The JSON data is an object with four properties, only two of which are required
 If included, Lamb-duh will send notifications when beginning and ending processing to the configured topic ARN, including a summary of what is included, and total elapsed runtime at the end.
 
 ```json
-{ "topicArn": null, "timeZone": null }
+{
+        "topicArn": "arn:aws:sns:us-east-1:1234567890:lamb-duh-deployment",
+        "timeZone": "America/New_York"
+}
 ```
 
 | Property | Required | Type | Description |
@@ -170,17 +173,21 @@ For each function:
 | default | yes | Map | Specify default values for all functions.<br/><br />*See all optional properties for [Function definition](#function-definition)* |
 | functions | yes | Array&lt;Map&gt; | The set of functions to deploy<br/><br />*See [Function definition](#function-definition)* for available properties |
 
-##### Function definition
+##### Function/Default definition
 
-| Property | Required | Type | Description |
-| -------- |:--------:|:----:| ----------- |
-| name | yes | String | Name of the function |
-| source | yes | String | Relative path to the function's main code file in the source archive |
-| iamRoleArn | no | String | ARN for the role to be used by this function |
-| memorySize | no | Number | Memory size for the function <br /> **must be from the set of values allowed by Lambda** |
-| timeout | no | Number | Time - in **seconds** - for the Lambda function to time out |
-| runtime | no | String | Lambda runtime environment |
-| handler | no | String | The name of the export from the main code file to call |
+| Property | Required | In Default | Type | Description |
+| -------- |:--------:|:----------:|:----:| ----------- |
+| name | yes | no | String | Name of the function |
+| source | yes | no | String | Relative path to the function's main code file in the source archive |
+| iamRoleArn | no | yes | String | ARN for the role to be used by this function |
+| memorySize | no | yes | Number | Memory size for the function <br /> **must be from the set of values allowed by Lambda** |
+| timeout | no | yes | Number | Time - in **seconds** - for the Lambda function to time out |
+| runtime | no | yes | String | Lambda runtime environment |
+| handler | no | yes | String | The name of the export from the main code file to call<br /><br />*Default:* **index** |
+
+:::tip
+Properties than can be set on the `default` object, are noted as "In Default" in the table
+:::
 
 ### API Gateway Tasks
 

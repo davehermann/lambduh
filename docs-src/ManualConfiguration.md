@@ -1,8 +1,14 @@
 # Initial AWS Configuration: Manual
 
+:::warning
 For this walkthrough, use of the AWS Console is assumed.
-The names used (IAM role name, Lambda function name, etc.) will match the default names used by the CLI.
+:::
 
+:::tip
+The names used (IAM role name, Lambda function name, etc.) will match the default names used by the CLI.
+:::
+
+[[toc]]
 
 ## IAM Configuration
 
@@ -140,9 +146,9 @@ If you want notifications sent via SNS topics
     ]
 ```
 
-### Additional policy needed for each S3 bucket manipulated by a deployment
+### Additional policy needed for <u>each</u> S3 bucket manipulated by a deployment
 
-Each S3 task in a configuration will overwrite the contents of a bucket-key (prefix)
+Each S3 task in an application configuration will overwrite the contents of a bucket-key (prefix)
 
 #### S3_Write_to_YOUR-DESTINATION-BUCKET-NAME
 ```json
@@ -182,11 +188,12 @@ Each S3 task in a configuration will overwrite the contents of a bucket-key (pre
 
 + Upload the `./Lambda Deployment Package.zip` file
 + *Handler:* **deploy.lambda**
-+ Add a tag
-    + *Key:* **Lamb-duh Resource**
-    + *Value:* **true**
 + *Memory Size:* **2048 MB** (or greater)
 + *Timeout:* **2 minutes** (or greater)
+
+:::warning Memory and Timeout
+If you experience any issues with the process timing out during a deployment, **increase** either the *Memory Size* or the *Timeout* period, or both.
+:::
 
 ### Add Trigger to Function
 
@@ -199,3 +206,15 @@ Each S3 task in a configuration will overwrite the contents of a bucket-key (pre
     + For your trigger bucket
     + All object create events
     + *Suffix:* **.lambduh.txt**
+
+## Optional: Add Tags
+
+For both the function in Lambda, and the IAM role:
+
++ Add a tag
+    + *Key:* **Lamb-duh Resource**
+    + *Value:* **true**
+
+:::tip Why Tag?
+Tags are used by the CLI utility to more efficiently work with resources
+:::
