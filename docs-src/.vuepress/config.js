@@ -3,6 +3,7 @@ let config = {
     description: `Stupid name. Stupidly simple serverless deployment to AWS.`,
     dest: `./docs/`,
     themeConfig: {
+        repo: `davehermann/lambduh`,
         sidebar: [
             `/`,
             `/GettingStarted`,

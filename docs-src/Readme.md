@@ -36,7 +36,7 @@ Lamb-duh can do as much, or as little, of the process to get you up and running 
 
 ### Do you want a CLI utility to handle heavy lifting?
 
-Lamb-duh has a CLI utility that can:
+Lamb-duh has a CLI utility (yes, <u>of course</u> there's a CLI utility) that can:
 + Take care of the entire AWS configuration
     + Create a Lambda function
     + Attach triggers to an S3 bucket for the function in Lambda

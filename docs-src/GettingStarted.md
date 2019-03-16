@@ -4,6 +4,10 @@
 
 ## 1. Install Lamb-duh locally
 
+### Lamb-duh is available via NPM
+
+This installs the CLI utility.
+
 ```
 npm install lambduh -g
 ```
@@ -11,6 +15,15 @@ npm install lambduh -g
 :::tip
 As part of installation, the function code for Lamb-duh's AWS Lambda function will be compressed to (`./Lambda Deployment Package.zip`)
 :::
+
+### Lamb-duh can be cloned from source
+
++ Clone [the repo from GitHub](https://github.com/davehermann/lambduh)
++ Switch to the **./src** directory
+    + Run `npm install` in the **./src** directory
+    + Run `node buildForLambda.js` in the **./src** directory
++ Follow all **manual** configuration steps in this documentation
+
 
 ## 2. Configure the AWS environment for Lamb-duh
 

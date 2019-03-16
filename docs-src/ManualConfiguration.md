@@ -1,7 +1,7 @@
 # Initial AWS Configuration: Manual
 
 :::warning
-For this walkthrough, use of the AWS Console is assumed.
+For this documentation, use of the AWS Console is assumed.
 :::
 
 :::tip
