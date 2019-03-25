@@ -39,7 +39,7 @@ function addPermissionsToIAMRole(role, answers, remainingPermissions) {
         const policyDocument = JSON.stringify(policy.document)
             .replace(/\{TRIGGER_BUCKET_NAME\}/g, answers.s3TriggerBucket);
 
-        return addInlinePoliciesToIAMRole(role.roleName, policy.name.replace(/ /g, `_`))
+        return addInlinePoliciesToIAMRole(role.roleName, policy.name.replace(/ /g, `_`), policyDocument)
             .then(() => addPermissionsToIAMRole(role, answers, remainingPermissions));
 
     }
