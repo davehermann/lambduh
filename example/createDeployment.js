@@ -92,7 +92,10 @@ function generateCompressedArchive() {
             return zip.generateAsync({ type: `nodebuffer`, compression: `DEFLATE`, compressionOptions: { level: 7 } });
         })
         .then(zippedBuffer => fs.writeFile(path.join(__dirname, `example.zip`), zippedBuffer))
-        .then(() => { Warn(`\nCompressed archive written to ${path.join(__dirname, `example.zip`)}.\nDeploy via "lambduh deploy-init" followed by "lambduh deploy".\n\nSee documentation for further details.`); });
+        .then(() => {
+            Warn(`\nCompressed archive written to ${path.join(__dirname, `example.zip`)}.`);
+            Warn(`\nDeploy by running "lambduh deploy-init" followed by "lambduh deploy" in ${__dirname}.`);
+            Warn(`\nSee Lamb-duh documentation for further details.\n`); });
 }
 
 function summarize() {
