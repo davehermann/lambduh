@@ -57,7 +57,7 @@ function queryUser(valueDefaults) {
         },
         {
             name: `lambduhConfigurationFile`,
-            message: `Relative path to Lamb-duh's configuration`,
+            message: `Relative path to Lamb-duh configuration JSON in source:`,
             default: lambduhConfigurationFile || `lamb-duh.configuration.json`
         }
     ];
@@ -76,6 +76,8 @@ function queryUser(valueDefaults) {
  * Generate a deployment JSON file that will send a local compressed source to a remote AWS S3 bucket
  */
 function createConfiguration() {
+    Warn(`\nRunning from ${path.dirname(_configFilePath)}.\nRelative paths should be from here.\n`);
+
     return loadExistingFile()
         .then(existingConfiguration => queryUser(existingConfiguration))
         .then(answers => generateConfigurationFile(answers));
