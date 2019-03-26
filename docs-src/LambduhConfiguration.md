@@ -6,7 +6,7 @@
 
 The file should be named `lamb-duh.configuration.json` and should appear at the root of your compressed deployment archive.
 
-[A complete example JSON configuration can be found here](./ExampleConfiguration.md), and is the complete JSON document for the structure and detailed descriptions below.
+[A complete JSON configuration can be found here](./ExampleConfiguration.md), and is the complete JSON document for the structure and detailed descriptions below.
 
 ## Root Structure
 

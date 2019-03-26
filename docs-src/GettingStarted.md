@@ -2,7 +2,7 @@
 
 [[toc]]
 
-## 1. Install Lamb-duh locally
+## 1. Install Lamb-duh source locally
 
 ### Lamb-duh is available via NPM
 

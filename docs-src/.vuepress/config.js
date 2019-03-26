@@ -10,6 +10,7 @@ let config = {
             `/ManualConfiguration`,
             `/LambdaEnvironment`,
             `/LambduhConfiguration`,
+            `/ExampleDeployment`,
             `/CLI`,
             `/UpgradeToV2`,
         ],
