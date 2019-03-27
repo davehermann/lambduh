@@ -69,7 +69,7 @@ function configureAWS() {
         .then(answers => AddRole(answers))
         .then(data => CreateLambdaFunction(data.answers, data.role))
         .catch(err => {
-            Err(err);
+            Err(err, true);
             Err(`\nlambduh aws-install could not be completed at this time.`);
         });
 }

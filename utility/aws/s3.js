@@ -41,6 +41,15 @@ function selectBucket(originalAnswers) {
         .then(bucketNames => {
             bucketNames.sort();
 
+            // // Map bucket names to choices-compatible object
+            // let bucketOptions = bucketNames.map(bucket => { return { name: bucket, value: bucket }; });
+            // Add a separator to the bottom of the list
+            bucketNames.push(new inquirer.Separator());
+            // Add a separator to the top of the list
+            bucketNames.unshift(new inquirer.Separator());
+            // Add a refresh option to the top of the list
+            bucketNames.unshift({ name: `Refresh Bucket List`, value: null });
+
             let questions = [
                 {
                     type: `list`,
@@ -54,9 +63,14 @@ function selectBucket(originalAnswers) {
             return inquirer.prompt(questions);
         })
         .then(answers => {
-            originalAnswers.s3TriggerBucket = answers.selectedBucket;
+            // If the selected option is to refresh, repeat, otherwise, return selection
+            if (answers.selectedBucket === null)
+                return selectBucket(originalAnswers);
+            else {
+                originalAnswers.s3TriggerBucket = answers.selectedBucket;
 
-            return getBucketRegion(originalAnswers);
+                return getBucketRegion(originalAnswers);
+            }
         });
 }
 
