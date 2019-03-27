@@ -1,9 +1,16 @@
 "use strict";
 
+// Node Modules
+const path = require(`path`);
+
+// NPM Modules
 const aws = require(`aws-sdk`),
     fs = require(`fs-extra`),
-    tar = require(`tar`),
-    log = require(`./logging`);
+    jsZip = require(`jszip`),
+    tar = require(`tar`);
+
+// Application Modules
+const log = require(`./logging`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
@@ -32,12 +39,14 @@ function cleanTemporaryRoot(localRoot) {
 
 // Extract the archive used to start processing
 function extractArchive(s3Record, extractionLocation) {
-    log.Trace(`Extracting Code Archive`);
+    log.Debug(`Extracting Code Archive`);
 
     let pExtract = fs.ensureDir(extractionLocation);
 
     // Support for tarballs
-    if (s3Record.object.key.search(/\.tar/g) >= 0) {
+    if (s3Record.object.key.search(/\.tar/g) > 0) {
+        log.Debug(`...tarball detected`);
+
         pExtract = pExtract
             .then(() => {
                 return new Promise((resolve, reject) => {
@@ -47,7 +56,7 @@ function extractArchive(s3Record, extractionLocation) {
                             reject(err);
                         })
                         .on(`end`, () => {
-                            log.Trace(`...extract complete`);
+                            log.Debug(`...extract complete`);
                             resolve();
                         });
 
@@ -58,7 +67,54 @@ function extractArchive(s3Record, extractionLocation) {
             });
     }
 
+    // Support for zip
+    if (s3Record.object.key.search(/\.zip$/) > 0) {
+        log.Debug(`...zip archive detected`);
+
+        pExtract = pExtract
+            .then(() => s3.getObject({ Bucket: s3Record.bucket.name, Key: s3Record.object.key }).promise())
+            .then(data => {
+                let unzip = new jsZip();
+                return unzip.loadAsync(data.Body, { createFolders: true });
+            })
+            .then(contentsZip => writeZipContents(contentsZip, extractionLocation))
+            .then(() => { log.Debug(`...extract complete`); });
+    }
+
     return pExtract;
+}
+
+// Extract each file from the zip archive
+function writeZipContents(contentsZip, extractionLocation, remainingFileNames) {
+    if (!remainingFileNames) {
+        remainingFileNames = Object.keys(contentsZip.files);
+        log.Debug({ allFilesInZip: remainingFileNames });
+    }
+
+    if (remainingFileNames.length > 0) {
+        let relativeFilePath = remainingFileNames.shift();
+        log.Trace({ [`Next file`]: relativeFilePath });
+
+        let fileInZip = contentsZip.file(relativeFilePath);
+        if (!!fileInZip)
+            // If the object is a file, retrieve as a buffer
+            return fileInZip.async(`nodebuffer`)
+                .then(fileContent => {
+                    // Get the path for the object
+                    let absolutePathForFile = path.join(extractionLocation, relativeFilePath);
+                    log.Trace(`Writing to ${absolutePathForFile}`);
+
+                    // Ensure the directory exists
+                    return fs.ensureDir(path.dirname(absolutePathForFile))
+                        // Write the file
+                        .then(() => fs.writeFile(absolutePathForFile, fileContent));
+                })
+                .then(() => writeZipContents(contentsZip, extractionLocation, remainingFileNames));
+        else
+            // Skip folders
+            return writeZipContents(contentsZip, extractionLocation, remainingFileNames);
+    } else
+        return Promise.resolve();
 }
 
 module.exports.CleanTemporaryRoot = cleanTemporaryRoot;
