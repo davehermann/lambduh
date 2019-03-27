@@ -42,3 +42,7 @@ A **lamb-duh.configuration.json** file will be generated, as will an **example.z
 :::tip Deployment options
 The archive can be deployed by configuring and running the [CLI utility deployment](./CLI.md#application-deployment), or just copying the archive file to the trigger S3 bucket via the AWS Console
 :::
+
+:::warning Check the results
+View your AWS resources (S3, Lambda, API Gateway) to see what was deployed
+:::

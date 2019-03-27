@@ -61,8 +61,8 @@ function initialize(evtData, context, localRoot, extractionLocation) {
 }
 
 function loadConfiguration(extractionLocation) {
-    // Read ~/lamb_duh.json from the extracted files
-    return fs.readFile(`${extractionLocation}/lamb_duh.json`, `utf8`)
+    // Read ~/lamb-duh.configuration.json from the extracted files
+    return fs.readFile(`${extractionLocation}/lamb-duh.configuration.json`, `utf8`)
         .then(configurationFileContents => {
             let configuration = JSON.parse(configurationFileContents);
             log.Dev({ "Loaded Configuration": configuration }, true);

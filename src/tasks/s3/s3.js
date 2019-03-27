@@ -39,13 +39,20 @@ function copyS3ObjectsToDestination(foundFiles, task, s3SourceBucket, sourceS3Pa
     if (foundFiles.length > 0) {
         let nextFile = foundFiles.shift();
 
-        let relativePath = nextFile.Key.replace(sourceS3Path, ``);
-        sourceKeys.push(relativePath);
+        let relativePath = nextFile.Key.replace(sourceS3Path, ``),
+            Key = relativePath;
+
+        // Write to a key prefix, if a prefix is defined
+        if (!!task.dest.key)
+            // Remove a leading or trail slash
+            Key = `${task.dest.key.replace(/^\//, ``).replace(/\/$/, ``)}/${Key}`
+
+        sourceKeys.push(Key);
 
         let copyParams = {
             CopySource: encodeURI(`/${s3SourceBucket}/${nextFile.Key}`),
             Bucket: task.dest.bucket,
-            Key: relativePath,
+            Key,
             CacheControl: !!task.cacheControl ? task.cacheControl : `no-cache`
         };
 

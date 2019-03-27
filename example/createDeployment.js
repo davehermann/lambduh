@@ -79,8 +79,6 @@ function generateCompressedArchive() {
                 // Remove the local path
                 .map(filePath => { return filePath.replace(`${path.join(__dirname, `src`)}${path.sep}`, ``); });
 
-            console.log(filesToZip);
-
             let zip = new jsZip();
 
             filesToZip.forEach(fileName => {

@@ -57,7 +57,7 @@ function getApiIdForApplicationName(applicationName) {
                 return matchingApis[0];
             // With no matches, create a new API
             else if (matchingApis.length == 0)
-                return apiGateway.createRestApi({ name: applicationName });
+                return apiGateway.createRestApi({ name: applicationName }).promise();
             // Error for everything else
             else
                 return Promise.reject(new Error(`More than one API matches the name ${applicationName.toLowerCase()}`));
