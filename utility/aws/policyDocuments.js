@@ -197,6 +197,28 @@ const configuratorPolicy = {
     }
 };
 
+const configurationUpdatePolicy = {
+    name: `Configurator Update Policy`,
+    description: `running the aws-update process`,
+    document: {
+        Version: `2012-10-17`,
+        Statement: [
+            {
+                Effect: `Allow`,
+                Action: [
+                    `lambda:GetFunctionConfiguration`,
+                    `lambda:UpdateFunctionCode`,
+                    `lambda:UpdateFunctionConfiguration`,
+                    `tag:GetResources`
+                ],
+                Resource: [
+                    `*`
+                ]
+            }
+        ]
+    }
+};
+
 const addS3Policy = {
     name: `S3 Permissions Policy`,
     description: `running the S3 task add permissions process`,
@@ -229,5 +251,6 @@ module.exports.PermissionSet = [
     snsReporting,
 ];
 module.exports.Configurator = configuratorPolicy;
+module.exports.ConfiguratorUpdate = configurationUpdatePolicy;
 module.exports.S3Permissions = addS3Policy;
 module.exports.S3WriteTo = s3WriteTask;

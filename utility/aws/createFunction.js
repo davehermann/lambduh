@@ -9,6 +9,13 @@ const aws = require(`aws-sdk`),
 // Application Modules
 const { RetryOnFailure, LambduhObjectTag } = require(`../utilities`);
 
+const _functionConfiguration = {
+    Handler: `deploy.handler`,
+    MemorySize: 2048,
+    Timeout: 120,
+    Runtime: `nodejs8.10`,
+};
+
 /**
  * Add an invoke permission to a Lambda function from an S3 bucket
  * @param {String} FunctionName - Name/ARN of the function
@@ -56,6 +63,20 @@ function addOrReplaceS3Trigger(triggerList, lambdaFunctionConfigurations) {
 }
 
 /**
+ * Load the "Lambda Deployment Package.zip" file
+ */
+function loadCodeArchiveFile() {
+    return new Promise((resolve, reject) => {
+        fs.readFile(path.join(__dirname, `..`, `..`, `Lambda Deployment Package.zip`), (err, contents) => {
+            if (!!err)
+                reject(err);
+            else
+                resolve(contents);
+        });
+    });
+}
+
+/**
  * Add the Lamb-duh app to Lambda
  * @param {Object} answers - The responses to configuration questions asked of the user
  * @param {string} role - Role creation data for the IAM role
@@ -66,24 +87,16 @@ function createLambdaFunction(answers, role) {
 
     Warn(`Deploying code to Lambda`);
 
-    return new Promise((resolve, reject) => {
-        fs.readFile(path.join(__dirname, `../../Lambda Deployment Package.zip`), (err, contents) => {
-            if (!!err)
-                reject(err);
-            else
-                resolve(contents);
-        });
-    })
+    return loadCodeArchiveFile()
         .then(zipAsBuffer => {
             let newLambdaFunction = {
                 Code: { ZipFile: zipAsBuffer },
                 FunctionName: answers.lambdaFunctionName,
                 Role: role.arn,
-                Handler: `deploy.handler`,
-                MemorySize: 2048,
-                Timeout: 120,
-                Runtime: `nodejs8.10`,
             };
+
+            for (let prop in _functionConfiguration)
+                newLambdaFunction[prop] = _functionConfiguration[prop];
 
             return RetryOnFailure(lambda, `createFunction`, newLambdaFunction, `IAM replication`, `Lambda function creation`);
         })
@@ -204,3 +217,5 @@ function createLambdaFunction(answers, role) {
 }
 
 module.exports.CreateLambdaFunction = createLambdaFunction;
+module.exports.defaultFunctionConfiguration = _functionConfiguration;
+module.exports.LoadCodeArchive = loadCodeArchiveFile;

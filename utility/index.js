@@ -5,6 +5,7 @@ const { IncludeTimestamp, InitializeLogging, Warn, Err } = require(`multi-level-
 
 // Application Modules
 const { ConfigureAWS } = require(`./awsConfiguration`),
+    { UpdateAWS } = require(`./awsUpdate`),
     { CreateDeploymentConfiguration } = require(`./deploymentConfiguration`),
     { DeployPackage } = require(`./deployPackage`),
     { ShowHelp } = require(`./help`),
@@ -28,20 +29,24 @@ function parseArguments() {
         let nextArg = argsArray.shift();
 
         switch (nextArg) {
+            case `aws-install`:
+                actions.push({ description: `Configuring AWS for Lamb-duh`, action: ConfigureAWS });
+                break;
+
+            case `aws-update`:
+                actions.push({ description: `Update existing Lamb-duh configuration in AWS`, action: UpdateAWS });
+                break;
+
             case `deploy-init`:
                 // If any argument is "init", only run init
                 actions = [{ description: `Configuring for Deployment`, action: CreateDeploymentConfiguration }];
                 argsArray = [];
                 break;
 
-            case `deploy`:
+            case `deploy`:    
                 actions.push({ description: `Starting deployment`, action: DeployPackage });
                 break;
-
-            case `aws-install`:
-                actions.push({ description: `Configuring AWS for Lamb-duh`, action: ConfigureAWS });
-                break;
-
+    
             case `deploy-s3-permissions`:
                 actions = [{ description: `Adding permissions to S3`, action: AddS3TaskPermissions }];
                 break;
