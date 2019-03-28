@@ -116,6 +116,10 @@ function archivePath(startTime) {
 }
 
 function deploymentHistory(configuration) {
+    // Do nothing if the configuration explicitly blocks archiving
+    if (!!configuration.remainingTasks.history && configuration.remainingTasks.history.noArchive)
+        return Promise.resolve();
+
     let uploadedToS3 = configuration.originalSource.Records[0].s3,
         // Get the bucket name, and object key
         bucket = uploadedToS3.bucket.name,
