@@ -59,6 +59,11 @@ function parseArguments() {
     return Promise.resolve(actions);
 }
 
+/**
+ * Run through the code process
+ * @param {Array<Map>} remainingActions - Actions remaining to be performed
+ * @param {Boolean} isFirst - Is this the first run of this function
+ */
 function runActions(remainingActions, isFirst) {
     if (isFirst)
         Warn(`\n--- Lamb-duh Serverless Deployment ---\n`);

@@ -13,8 +13,13 @@ const { BuildLambduh } = require(`./utilities`),
     { ConfiguratorUpdate } = require(`./aws/policyDocuments`),
     { UseProfile } = require(`./configuration/credentials`);
 
+// AWS SDK objects, set after credentials and region selection
 let lambda, resourceGroupsTaggingApi;
 
+/**
+ * Update the configuration and code in Lambda
+ * @param {String} functionArn - ARN of the function to be updated
+ */
 function redeployToLambda(functionArn) {
     // Get the existing function
     return lambda.getFunctionConfiguration({ FunctionName: functionArn }).promise()
@@ -33,10 +38,16 @@ function redeployToLambda(functionArn) {
         .then(ZipFile => lambda.updateFunctionCode({ FunctionName: functionArn, ZipFile }).promise());
 }
 
+/**
+ * Rebuild an updated archive of the application source
+ */
 function rebuildSource() {
     return BuildLambduh();
 }
 
+/**
+ * Use a prompt to have the user type in a complete ARN for a Lambda function
+ */
 function enterFunctionArn() {
     Warn(`A single existing function in the region could not be automatically detected.`);
 
@@ -52,6 +63,11 @@ function enterFunctionArn() {
         });
 }
 
+/**
+ * Locate the existing Lamb-duh function within the AWS region by searching for tagged functions
+ * @param {Array<Map>} foundResources - Array of all resources found so far
+ * @param {*} PaginationToken - Continuation token for next page of search results
+ */
 function findExistingFunction(foundResources, PaginationToken) {
     if (!foundResources || !!PaginationToken) {
         if (!foundResources)
@@ -59,7 +75,6 @@ function findExistingFunction(foundResources, PaginationToken) {
 
         let filter = {
             PaginationToken,
-            ResourcesPerPage: 1,
             TagFilters: [
                 { Key: `Lamb-duh Resource`, Values: [`true`] }
             ]
@@ -83,6 +98,9 @@ function findExistingFunction(foundResources, PaginationToken) {
     }
 }
 
+/**
+ * Enter an AWS region string
+ */
 function setAwsRegion() {
     Warn(`Which AWS region hosts your Lamb-duh deployment to be updated?`);
     let questions = [
@@ -99,6 +117,9 @@ function setAwsRegion() {
         });
 }
 
+/**
+ * Locate, and update, the Lamb-duh function in AWS
+ */
 function updateAWS() {
     return UseProfile(ConfiguratorUpdate)
         .then(() => setAwsRegion())

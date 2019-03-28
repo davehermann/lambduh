@@ -1,4 +1,4 @@
-# Lamb-duh configuration
+# Application Deployment Configuration
 
 [[toc]]
 

@@ -8,6 +8,9 @@ const { Warn, Err } = require(`multi-level-logger`);
 // Application Modules
 const { Throttle } = require(`../src/tasks/apiGateway/throttle`);
 
+/**
+ * Directory path for the application source
+ */
 const _applicationDirectory = path.join(__dirname, `..`, `src`);
 
 /**
@@ -61,6 +64,12 @@ function retryable(awsScope, method, configuration, reason, failureMessage, retr
     }
 }
 
+/**
+ * Handle launching a child process, and relaying the results
+ * @param {String} command - shell command to run
+ * @param {Array<String>} parameters - additional parameters to append
+ * @param {Map} options - additional options to send through to the spawn function
+ */
 function spawnProcess(command, parameters, options) {
     return new Promise(resolve => {
         let processHost = spawn(command, parameters, options);
@@ -76,6 +85,9 @@ function spawnProcess(command, parameters, options) {
     });
 }
 
+/**
+ * Run "npm install" within the application source directory
+ */
 function installNpm() {
     Warn(`Installing NPM modules for Lambda deployment package...`);
 
@@ -85,6 +97,9 @@ function installNpm() {
         });
 }
 
+/**
+ * Create a compressed archive of the application source directory
+ */
 function buildLambduh() {
     Warn(`Compressing Lamb-duh for deployment to Lambda`);
 

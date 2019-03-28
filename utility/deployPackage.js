@@ -10,6 +10,10 @@ const aws = require(`aws-sdk`),
 // Application Modules
 const { ReadDeploymentConfiguration } = require(`./configuration/locate`);
 
+/**
+ * Send the compressed archive configured for deployment to S3
+ * @param {Object} config - Deployment configuration
+ */
 function sendToS3(config) {
     if (!!config.credentialsProfile)
         aws.config.credentials = new aws.SharedIniFileCredentials({ profile: config.credentialsProfile });

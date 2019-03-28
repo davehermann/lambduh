@@ -9,6 +9,9 @@ const aws = require(`aws-sdk`),
 // Application Modules
 const { RetryOnFailure, LambduhObjectTag } = require(`../utilities`);
 
+/**
+ * Default baseline function configuration
+ */
 const _functionConfiguration = {
     Handler: `deploy.handler`,
     MemorySize: 2048,
