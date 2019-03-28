@@ -79,7 +79,7 @@ function createLambdaFunction(answers, role) {
                 Code: { ZipFile: zipAsBuffer },
                 FunctionName: answers.lambdaFunctionName,
                 Role: role.arn,
-                Handler: `deploy.lambda`,
+                Handler: `deploy.handler`,
                 MemorySize: 2048,
                 Timeout: 120,
                 Runtime: `nodejs8.10`,

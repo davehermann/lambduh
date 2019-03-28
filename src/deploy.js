@@ -11,7 +11,7 @@ global.logLevel = process.env.log || `warn`;
 const localRoot = path.join(`/tmp`, `deployment`);
 const extractionLocation = path.join(localRoot, `extract`);
 
-module.exports.lambda = (evtData, context) => {
+module.exports.handler = (evtData, context) => {
     log.Trace(evtData, true);
     log.Trace(context, true);
 
