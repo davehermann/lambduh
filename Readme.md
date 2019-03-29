@@ -3,6 +3,8 @@
 
 Lamb-duh is a serverless deployment tool for AWS serverless applications built around NodeJS JavaScript functions in AWS Lambda.
 
+See https://davehermann.github.io/lambduh/ for complete documentation.
+
 ## TL;DR?
 
 1. Write your application using any directory structure that works for you
