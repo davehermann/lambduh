@@ -1,0 +1,16 @@
+{
+    "name": "lamb-duh_serverless_package",
+    "author": "Dave Hermann",
+    "license": "GPL-3.0",
+    "repository": "github:davehermann/lambduh",
+    "main": "deploy.js",
+    "dependencies": {
+        "builtin-modules": "^3.0.0",
+        "fs-extra": "^7.0.1",
+        "jszip": "^3.1.5",
+        "luxon": "^1.11.1",
+        "mime-types": "^2.1.21",
+        "tar": "^4.4.8",
+        "uuid": "^3.3.2"
+    }
+}

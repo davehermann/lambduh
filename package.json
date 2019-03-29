@@ -1,15 +1,29 @@
 {
-  "name": "lamb_duh",
-  "version": "1.0.0",
+  "name": "lamb-duh",
+  "version": "2.0.0",
   "description": "Stupid name. Stupidly easy Lambda deployment.",
-  "private": true,
-  "main": "deploy.js",
-  "author": "Dave Hermann <hermann.dp+github@gmail.com>",
+  "scripts": {
+    "docs:dev": "vuepress dev docs-src",
+    "docs:build": "vuepress build docs-src",
+    "postinstall": "node ./post-install.js"
+  },
+  "author": "Dave Hermann",
+  "license": "GPL-3.0",
+  "repository": "github:davehermann/lambduh",
   "dependencies": {
-    "fs-extra": "^0.26.7",
-    "jszip": "^3.1.1",
-    "mime-types": "^2.1.10",
-    "tar": "^2.2.1",
-    "uuid": "^2.0.1"
+    "aws-sdk": "^2.399.0",
+    "fs-extra": "^7.0.1",
+    "inquirer": "^6.2.2",
+    "jszip": "^3.2.1",
+    "mime-types": "^2.1.21",
+    "multi-level-logger": "^1.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.13.0",
+    "vuepress": "^0.14.10",
+    "webpack-dev-middleware": "^3.6.0"
+  },
+  "bin": {
+    "lamb-duh": "./utility/index.js"
   }
 }

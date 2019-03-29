@@ -1,0 +1,35 @@
+{
+    "applicationName": "Lamb-duhExample",
+    "tasks": [
+        {
+            "type": "S3",
+            "source": "/frontend",
+            "dest": {
+                "bucket": ""
+            }
+        },
+        {
+            "type": "Lambda",
+            "default": {
+                "memorySize": 128,
+                "timeout": 5,
+                "runtime": "nodejs8.10",
+                "iamRoleArn": ""
+            },
+            "functions": [
+                { "name": "hello-world", "source": "/backend/functions/hello-world.js" }
+            ]
+        },
+        {
+            "type": "ApiGateway",
+            "deployment": {
+                "stage": "dev",
+                "production": false
+            },
+            "cors": { "origin": "*" },
+            "endpoints": [
+                { "path": "/data/hello", "method": "GET", "functionName": "hello-world" }
+            ]
+        }
+    ]
+}

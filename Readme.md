@@ -1,12 +1,14 @@
 # Lamb-duh
 #### Stupid name. Stupidly simple serverless deployment to AWS.
 
+Lamb-duh is a serverless deployment tool for AWS serverless applications built around NodeJS JavaScript functions in AWS Lambda.
+
 ## TL;DR?
 
 1. Write your application using any directory structure that works for you
-    + All of your AWS Lambda functions must use **relative** paths for modules (and their modules need relative paths)
+    + All of your AWS Lambda functions and modules must use **relative** paths for `require()` of local modules
 1. Include a configuration JSON file in the root of your application
-    + Defines the S3, Lambda, and/or API Gateway steps
+    + Configuration defines the S3, Lambda, and/or API Gateway steps
 1. Archive the entire application
     + .zip, .tar, and .tar.gz all supported!
 1. Drop your archive file in an S3 bucket
@@ -16,266 +18,29 @@
 You're a developer.
 You have a way of working with code that works for you.
 Going serverless should work that way too.
-AWS has a plethora of code tools (Pipeline, Code Deploy) but they don't work together *that* well and they're all focused on **server** deployment.
-Wouldn't it be great to deploy **serverless** as easily as Code Deploy?
-We need a one-stop serverless deployment, preferably built into AWS itself.
+AWS has numerous code tools (Pipeline, Code Deploy, Cloud Formation) some of which even deploy to their serverless infrastructure, but wouldn't it be great to deploy **serverless** applications using **serverless** infrastructure?
 
 **Lamb-duh** uses AWS Lambda to deploy every part of an application in one step, while keeping the same application structure you're comfortable with.
 
-Whether you're frontend, backend, or full-stack, Lamb-duh has something to help deploy complex web (or any other S3/Lambda/API Gateway) applications.
+Whether you're frontend, backend, or full-stack, Lamb-duh has something to help deploy complex web (or any S3/Lambda/API Gateway) applications, or individual parts.
 
-## Is there a catch?
+## Getting started
 
-Lamb-duh won't hold your hand the way other serverless frameworks might.
-You'll have to create your own IAM roles, both for Lamb-duh and the functions it deploys.
-Don't worry, all of the necessary permissions for Lamb-duh are below, but Lamb-duh assumes only you know best for your own application(s), and suggests never giving a piece of code enough control to write IAM roles and permissions for you.
-
-The down side is that you will have to fill in some IAM role permissions, but the upside is that it's **one time only, to cover all current and future applications you deploy via Lamb-duh** and your deployment process is as simple as placing an archive in an S3 bucket.
-
-## Usage
-
-JSON configuration and detailed description:
-
-```
-{
-    "applicationName": "SomeGoodName",
-    "taskFilters": {},
-    "tasks": []
-}
-```
-+ The *applicationName* will be used as part of the AWS Lambda function naming, and the API Gateway name for the API
-
-+ *taskFilters* is optional, and very useful when the array of Lambda functions or API Gateway endpoints becomes too large to manually delete from when working with test deployments
-    + ```{ "include": { "lambda": null, "apiGateway": null } }```
-        + ```"lambda"``` is a string array listing the **functionName** property of the functions to include in deployment  
-        ```"lambda": [ "function1", "function2" ]```
-        + ```"apiGateway"``` is an object array that can include the **path** or **functionName** on the endpoint (or non-endpoint alias for versioned, not-public functions), and can optionally specify the **method** as well  
-        ```"apiGateway": [ { "path": "/gateway/path/to/use" }, { "functionName": "function1" }, { "functionName": "function2", "method": "GET" } ]```
-            + If ```"apiGateway"``` is not specified, but one or more functions are listed for ```"lambda"```, ```"apiGateway"``` will automatically be generated for only those functions
-    + ```{ "exclude" }``` **- not yet implemented**
-
-+ Objects in the *tasks* array are of 3 types
-    + <u>S3 tasks</u>
-    ```
-    {
-        "disabled": false,
-        "type": "S3",
-        "source": "/a/path/to/frontend",
-        "dest": {
-            "bucket": "bucketname",
-            "key": "optional/key/prefix"
-        }
-    }
-    ```
-        + deploy all code in your application from `/a/path/to/frontend` to an S3 bucket named `bucketname` under the `optional/key/prefix` directory within the bucket
-        + dest.key is an optional field - use it if you need it
-    + <u>Lambda tasks</u>
-    ```
-    {
-        "disabled": false,
-        "type": "Lambda",
-        "alternatePackageJson":"serverless.package.json",
-        "compressionLevel": 0,
-        "default": {
-            "memorySize": 256,
-            "timeout": 10,
-            "runtime": "nodejs6.10"
-        },
-        "functions": [
-            { "name": "nameYourFunction", "source": "/path/to/function.js", "iamRoleArn":"arn:aws:iam::1234567890:role/yourRoleNameHere", "memorySize": 1024, "timeout": 5, "runtime": "nodejs4.3" }
-        ]
-    }
-    ```
-        + run `npm install` on `serverless.package.json` to pull in all need NPM modules
-            + for a scenario where you are transitioning an application from server to serverless, you can continue to use `package.json` for your server code, and the alternate for your serverless code
-            + if you don't define *alternatePackageJson*, then `package.json` will be used
-        + create a function-specific directory tree for `/path/to/function.js`, and traverse all local requires to include them in it (as well as the `node_modules` directory generated by `npm install` above)
-        + create a Lambda function named *ld_SomeGoodName_nameYourFunction*, using the role noted by the role arn, the 1024 GB memory configuration, a timeout of 5 seconds, and running on NodeJS 4.3
-            + if *memorySize*, *timeout*, or *runtime* is not included, the default configured with `default` will be used
-        + deploy the code using the set *compressionLevel* when creating the zip to the function
-            + Lambda calculates code size based on the package deployed to it
-            + As any compression over 0 will require additional memory,
-
-    + <u>API Gateway tasks</u>
-    ```
-    {
-        "disabled": false,
-        "type": "ApiGateway",
-        "stage": "nameYourStage",
-        "cors": { "origin": "*" },
-        "endpoints": [
-            { "path": "/request/path/from/root/{optionalParameters}", "method": "GET", "functionName": "nameYourFunction", "headers": [{ "name": "headerName", "parameterName": "headerSentToLambda" }], "parameters": [{ "name":"query", "parameterName": "queryStringSentToLambda"}], "endpointConfiguration": { "routeProp": "value", "routeArray": ["arr1", "arr2"] } }
-        ]
-    }
-    ```
-        + Create an API named `SomeGoodName`
-        + Create the path resources
-            + `/request`
-            + `/request/path`
-            + `/request/path/from`
-            + `/request/path/from/root`
-            + `/request/path/from/root/{optionalParameters}`
-        + Create a GET method for `/request/path/from/root/{optionalParameters}`
-            + Add the header `headerName` to the method request
-            + Add the query string parameter `query` to the method request
-            + Generate a body mapping template for the integration request with the following fields
-                + `optionalParameters`
-                + `headerSentToLambda`
-                + `queryStringSentToLambda`
-                + `endpointConfiguration`
-                    + Pass route constants defined in API Gateway to Lambda functions
-                    + Use for one function backing multiple routes with differing configurations
-                + `requestor: { ip, userAgent }`
-                    + **Always** includes the IP and User Agent string
-            + Add a 200 response to the integration response
-            + Add a 200 response to the method response
-            + Creates a Lambda **function version** with a tag `nameYourStage`
-            + Integrates with Lambda function *ld_SomeGoodName_nameYourFunction:nameYourStage*
-                + Add the IAM permission necessary to run *ld_SomeGoodName_nameYourFunction:nameYourStage* in Lambda from this method in API Gateway
-        + Create an OPTIONS method for `/request/path/from/root/{optionalParameters}`
-            + Sends appropriate CORS response, including the Access-Control-Allow-Origin set to `*`
-                + configured with the `"cors": { "origin": "*" }` line
-        + Creates the stage deployment named `nameYourStage`
-
-
-## IAM Configuration
-
-1. Create a new role
-    + For **Select Role Type**, select the *AWS Lambda* role under *AWS Service Roles*
-    + Do not attach any policies
-1. Open the role, and under *Inline Policies* we're going to create 5 new policies
-    + **Logging** - which is needed by all AWS Lambda functions
-    ```
-    "Effect": "Allow",
-    "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-    ],
-    "Resource": [
-        "arn:aws:logs:*:*:*"
-    ]
-    ```
-    + **S3** - For where you will place the code archive to start the deployment process
-    ```
-    "Effect": "Allow",
-    "Action": [
-        "s3:DeleteObject",
-        "s3:GetObject",
-        "s3:PutObject"
-    ],
-    "Resource": [
-        "arn:aws:s3:::YOUR-BUCKET-NAME-FOR-DROPPING-THE-CODE-ARCHIVE/*"
-    ]
-    ```
-    + **S3** - For ***each*** bucket receiving deployments
-    ```
-    {
-        "Effect": "Allow",
-        "Action": [
-            "s3:ListBucket"
-        ],
-        "Resource": [
-            "arn:aws:s3:::YOUR-BUCKET-NAME-FOR-DEPLOYMENT"
-        ]
-    },
-    {
-        "Effect": "Allow",
-        "Action": [
-            "s3:DeleteObject",
-            "s3:PutObject"
-        ],
-        "Resource": [
-            "arn:aws:s3:::YOUR-BUCKET-NAME-FOR-DEPLOYMENT/*"
-        ]
-    },
-    ```
-    + **Lambda**
-    ```
-    "Effect": "Allow",
-    "Action": [
-        "iam:PassRole",
-        "lambda:CreateAlias",
-        "lambda:CreateFunction",
-        "lambda:DeleteFunction",
-        "lambda:GetFunctionConfiguration",
-        "lambda:GetPolicy",
-        "lambda:ListAliases",
-        "lambda:ListFunctions",
-        "lambda:ListVersionsByFunction",
-        "lambda:PublishVersion",
-        "lambda:RemovePermission",
-        "lambda:UpdateAlias",
-        "lambda:UpdateFunctionCode",
-        "lambda:UpdateFunctionConfiguration",
-        "lambda:AddPermission"
-    ],
-    "Resource": [
-        "*"
-    ]
-    ```
-    + **API Gateway**
-        ```
-        "Effect": "Allow",
-        "Action": [
-            "apigateway:DELETE",
-            "apigateway:GET",
-            "apigateway:PATCH",
-            "apigateway:POST",
-            "apigateway:PUT"
-        ],
-        "Resource": [
-            "arn:aws:apigateway:*::/*"
-        ]
-        ```
-
-## Trigger configuration
-
-
-+ Lambda Event Source
-    + S3
-        + To support tarballs
-            + On *Object Created >> Put*
-            + *Suffix*: `tar`
-            + **Recommend:** *Prefix* of your key path if you use one
-        + To support Gzipped tarballs
-            + On *Object Created >> Put*
-            + *Suffix*: `tar.gz`
-            + **Recommend:** *Prefix* of your key path if you use one
-
-## Runtime Options
-
-### Per-task Processing
-To handle [AWS Lambda limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html), Lamb-duh splits tasks into sub-task.
-The number of tasks per sub-task can be configured with *environment variables*.
-
-#### Available Per-task Variables
-+ **lambdasPerTask** - *Default: **10*** - The number of Lambda functions that will be compiled and created/updated per sub-task
-+ **minLambdaForSplit** - *Default: **0**, always split tasks* - The threshold # of Lambda functions to process under which a configuration will not split any of its processing into separate sub-tasks.
-
-### Logging
-By default, all logging is written to Cloudwatch Logs using a *WARN* level.
-You should configure for *DEBUG* or even *TRACE* to correct any initial problems.
-
-#### Set Log Level
-Add the *environment variable* **log** on this function in Lambda with the [case insensitive] level as the value.
-
-#### Possible levels
-+ Trace
-+ Debug
-+ Info
-+ Warn
-+ Error
-
+See the project documentation for:
++ Manual setup within AWS
++ Necessary application configuration
++ Using the CLI utility (yes, <u>of course</u> there's a CLI utility) to automate AWS setup and deployment
 
 ## License
 
-This is licensed under the GPLv3.
-Details are in [License.txt](./License.txt)
+Lamb-duh is licensed under the GPLv3.  
+See [License.txt](./License.txt)
 
-## To do:
+---
 
-+ General
-    + Support Zip
-+ S3 Task
-    + Clean up removed files
+Copyright (C) 2019 David Hermann  
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.

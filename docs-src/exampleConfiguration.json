@@ -1,0 +1,74 @@
+{
+    "applicationName": "MyApplication",
+    "snsNotifications": {
+        "topicArn": "arn:aws:sns:us-east-1:1234567890:lamb-duh-deployment",
+        "timeZone": "America/New_York"
+    }
+    ,
+    "taskFilters": {},
+    "tasks": [
+        {
+            "type": "S3",
+            "disabled": false,
+            "source": "./relative/path/to/static/files",
+            "dest": {
+                "bucket": "bucketname",
+                "key": "optional/key/prefix"
+            }
+        },
+        {
+            "type": "Lambda",
+            "disabled": false,
+            "alternatePackageJson":"serverless.package.json",
+            "compressionLevel": 0,
+            "default": {
+                "handler": "lambda",
+                "iamRoleArn": "arn:aws:iam::1234567890:role/primaryRoleName",
+                "memorySize": 256,
+                "timeout": 10,
+                "runtime": "nodejs8.10"
+            },
+            "functions": [
+                { "name": "lambdaFunction1", "source": "/path/to/function1.js" },
+                {
+                    "name": "lambdaFunction2",
+                    "source": "/path/to/function2.js",
+                    "iamRoleArn": "arn:aws:iam::1234567890:role/alternateRoleName",
+                    "memorySize": 1024,
+                    "timeout": 5,
+                    "runtime": "nodejs6.10",
+                    "handler": "main"
+                }
+            ]
+        },
+        {
+            "disabled": false,
+            "type": "ApiGateway",
+            "deployment": {
+                "stage": "yourStageName",
+                "production": true,
+                "versioningLimits": {
+                    "keep": 2,
+                    "expirationHours": 6
+                },
+            },
+            "cors": { "origin": "*" },
+            "aliasNonEndpoints": [
+                { "functionName": "lambdaFunction1" }
+            ],
+            "endpoints": [
+                {
+                    "path": "/request/path/from/root/{optionalParameters}",
+                    "method": "GET",
+                    "functionName": "lambdaFunction2",
+                    "headers": [{ "name": "httpHeader1", "parameterName": "header1SentToLambda" }],
+                    "parameters": [{ "name":"queryParameter", "parameterName": "queryParameterSentToLambda"}],
+                    "endpointConfiguration": {
+                        "routeProp": "value",
+                        "routeArray": ["arr1", "arr2"]
+                    }
+                }
+            ]
+        }
+    ]
+}
