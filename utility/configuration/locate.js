@@ -52,7 +52,7 @@ function readDeploymentConfiguration() {
             Err(err);
 
             Err(`No lamb-duh.deployment.json file could be found in ${process.cwd()} or in any path above.`);
-            Err(`Run "lambduh init" from the root directory of your application.`);
+            Err(`Run "lamb-duh init" from the root directory of your application.`);
 
             return null;
         });

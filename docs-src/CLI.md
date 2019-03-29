@@ -1,6 +1,6 @@
 # Lamb-duh CLI Application
 
-The CLI application, `lambduh`, can be used to initially configure Lamb-duh within AWS, as well as work with configuring and deploying applications.
+The CLI application, `lamb-duh`, can be used to initially configure Lamb-duh within AWS, as well as work with configuring and deploying applications.
 
 Each command will walk through its process as noted.
 
@@ -21,7 +21,7 @@ The Lamb-duh CLI will note what IAM policy permissions it needs to perform its t
 + Configure triggers on an S3 bucket
 
 ```
-lambduh aws-install
+lamb-duh aws-install
 ```
 
 ### Prerequisite: S3 Bucket
@@ -35,7 +35,7 @@ The process will ask for you to name the IAM role, and Lambda function, which wi
 
 ## Application Deployment
 
-Lamb-duh can upload your archive to your S3 triggering bucket for you with a single command, `lambduh deploy`.
+Lamb-duh can upload your archive to your S3 triggering bucket for you with a single command, `lamb-duh deploy`.
 
 :::warning Configuration
 To deploy an application, a configuration file must exist at the root of the archive bundle.
@@ -44,10 +44,10 @@ See [Lamb-duh configuration](./LambduhConfiguration.md) for details.
 
 ### Add a deploy configuration
 
-+ Client-side configuration used for running the `lambduh deploy` command.
++ Client-side configuration used for running the `lamb-duh deploy` command.
 
 ```
-lambduh deploy-init
+lamb-duh deploy-init
 ```
 
 Creates a deploy configuration at the current directory in `lamb-duh.deployment.json`.
@@ -62,7 +62,7 @@ The file contains:
 + Ensure the role used for Lamb-duh has permission to write to all buckets included in the application's Lamb-duh configuration
 
 ```
-lambduh deploy-s3-permissions
+lamb-duh deploy-s3-permissions
 ```
 
 Scans the Lamb-duh configuration JSON for any S3 tasks, and adds any missing permissions to an IAM role.
@@ -72,7 +72,7 @@ This can also be [configured manually](./ManualConfiguration.html#additional-pol
 ### Deploy to Server
 
 ```
-lambduh deploy
+lamb-duh deploy
 ```
 
 Uses `lamb-duh.deployment.json` to upload the compressed archive file, and trigger the Lamb-duh deployment process in AWS.

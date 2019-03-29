@@ -69,7 +69,7 @@ function writeRemainingTasks(remainingTasks, originalSource) {
 
     let params = {
         Bucket: originalSource.Records[0].s3.bucket.name,
-        Key: `${remainingTasks.startTime}/remainingTasks/${(remainingTasks.index + ``).padStart(5, `0`)}.lambduh.txt`,
+        Key: `${remainingTasks.startTime}/remainingTasks/${(remainingTasks.index + ``).padStart(5, `0`)}.lamb-duh.txt`,
         ContentType: `text/plain`,
         Body: JSON.stringify(saveConfiguration, null, 4)
     };

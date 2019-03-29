@@ -95,7 +95,7 @@ function generateCompressedArchive() {
         .then(zippedBuffer => fs.writeFile(path.join(__dirname, `example.zip`), zippedBuffer))
         .then(() => {
             Warn(`\nCompressed archive written to ${path.join(__dirname, `example.zip`)}.`);
-            Warn(`\nDeploy by running "lambduh deploy-init" followed by "lambduh deploy" in ${__dirname}.`);
+            Warn(`\nDeploy by running "lamb-duh deploy-init" followed by "lamb-duh deploy" in ${__dirname}.`);
             Warn(`\nSee Lamb-duh documentation for further details.\n`); });
 }
 

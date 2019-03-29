@@ -176,7 +176,7 @@ function createLambdaFunction(answers, role) {
                     Filter: {
                         Key: {
                             FilterRules: [
-                                { Name: `suffix`, Value: `.lambduh.txt` }
+                                { Name: `suffix`, Value: `.lamb-duh.txt` }
                             ]
                         }
                     }

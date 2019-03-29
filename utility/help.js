@@ -10,7 +10,7 @@ function displayHelp(options) {
     helpText =
         `--- Help ---\n`
         + `\n`
-        + `Usage: lambduh COMMAND\n`
+        + `Usage: lamb-duh COMMAND\n`
         + `\n`
         + `Commands\n`
         + `--------\n`

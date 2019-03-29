@@ -9,7 +9,7 @@
 This installs the CLI utility.
 
 ```
-npm install lambduh -g
+npm install lamb-duh -g
 ```
 
 :::tip
@@ -44,7 +44,7 @@ The manual process will require you to:
 
 ### Automated Process
 
-1. Run `lambduh aws-install`, answer a few questions, and let Lamb-duh's CLI utility take care of the setup for you
+1. Run `lamb-duh aws-install`, answer a few questions, and let Lamb-duh's CLI utility take care of the setup for you
 
 [Read more about the automated process](./CLI.md#initial-aws-configuration-automated)
 

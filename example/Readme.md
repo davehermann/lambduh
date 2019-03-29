@@ -15,7 +15,7 @@ This will:
 
 ## Deploy the archive
 
-Use the `lambduh` CLI utility to deploy the archive, or manually deploy the archive.
+Use the `lamb-duh` CLI utility to deploy the archive, or manually deploy the archive.
 
 ## License
 

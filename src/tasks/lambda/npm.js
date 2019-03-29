@@ -66,7 +66,7 @@ function setPackageJSON(task, s3Source, codeLocation, startTime) {
                     });
             } else
                 return {
-                    name: `lambduh-deployed-application`,
+                    name: `lamb-duh-deployed-application`,
                     version: `1.0.0`,
                     private: true
                 };

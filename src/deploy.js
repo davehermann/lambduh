@@ -34,7 +34,7 @@ function startProcessing(evtData, context) {
         let s3Source = evtData.Records[0].s3,
             fileName = path.basename(s3Source.object.key);
 
-        if (fileName.search(/\.lambduh\.txt$/) >= 0)
+        if (fileName.search(/\.lamb-duh\.txt$/) >= 0)
             return NextSteps(evtData, localRoot);
         else {
             // Ignore event triggered for creation of historical record (S3 copy action + archive subpath)

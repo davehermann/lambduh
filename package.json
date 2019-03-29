@@ -24,6 +24,6 @@
     "webpack-dev-middleware": "^3.6.0"
   },
   "bin": {
-    "lambduh": "./utility/index.js"
+    "lamb-duh": "./utility/index.js"
   }
 }
