@@ -1,3 +1,3 @@
-module.exports.handler = (eventData) => {
+module.exports.handler = () => {
     return Promise.resolve(`Hello World!`);
-}
+};

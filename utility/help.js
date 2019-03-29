@@ -4,6 +4,7 @@ const { Warn } = require(`multi-level-logger`);
 /**
  * Display help text
  */
+// eslint-disable-next-line no-unused-vars
 function displayHelp(options) {
     let helpText;
 

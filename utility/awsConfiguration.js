@@ -1,6 +1,5 @@
 // NPM Modules
-const aws = require(`aws-sdk`),
-    inquirer = require(`inquirer`),
+const inquirer = require(`inquirer`),
     { Warn, Err } = require(`multi-level-logger`);
 
 // Application Modules

@@ -30,8 +30,6 @@ function addInlinePoliciesToIAMRole(RoleName, PolicyName, PolicyDocument) {
  * @param {Array<Object>} remainingPermissions - List of permissions still to add
  */
 function addPermissionsToIAMRole(role, answers, remainingPermissions) {
-    const iam = new aws.IAM({ apiVersion: `2010-05-08` });
-
     if (remainingPermissions.length > 0) {
         let policy = remainingPermissions.shift();
 

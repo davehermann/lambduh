@@ -1,7 +1,3 @@
-// Node Modules
-const { spawn } = require(`child_process`),
-    path = require(`path`);
-
 // NPM Modules
 const aws = require(`aws-sdk`),
     inquirer = require(`inquirer`),

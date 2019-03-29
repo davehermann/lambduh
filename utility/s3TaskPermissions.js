@@ -235,7 +235,7 @@ function addPoliciesToRole(RoleName, remainingPolicies) {
     let policyNames = Object.keys(remainingPolicies);
 
     if (policyNames.length > 0) {
-        return AddInlinePoliciesToIAMRole(RoleName, S3WriteTo.name.replace(/\{TARGET\_BUCKET\_NAME\}/g, policyNames[0]).replace(/ /g, `_`), remainingPolicies[policyNames[0]])
+        return AddInlinePoliciesToIAMRole(RoleName, S3WriteTo.name.replace(/\{TARGET_BUCKET_NAME\}/g, policyNames[0]).replace(/ /g, `_`), remainingPolicies[policyNames[0]])
             .then(() => {
                 delete remainingPolicies[policyNames[0]];
             })
@@ -255,7 +255,7 @@ function applyBucketPermissionsForLambduh(lambduhRoleName, bucketList) {
     let bucketsNeeded = {};
     bucketList.forEach(bucket => {
         bucketsNeeded[bucket] = JSON.stringify(S3WriteTo.document)
-            .replace(/\{TARGET\_BUCKET\_NAME\}/g, bucket);
+            .replace(/\{TARGET_BUCKET_NAME\}/g, bucket);
     });
 
     // Pull the existing permissions for the role, and check for any exact matches on the permission set for each bucket

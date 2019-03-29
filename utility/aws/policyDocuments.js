@@ -228,11 +228,11 @@ const addS3Policy = {
             {
                 Effect: `Allow`,
                 Action: [
-                    "iam:GetRole",
-                    "iam:GetRolePolicy",
-                    "iam:ListRolePolicies",
-                    "iam:ListRoles",
-                    "iam:PutRolePolicy"
+                    `iam:GetRole`,
+                    `iam:GetRolePolicy`,
+                    `iam:ListRolePolicies`,
+                    `iam:ListRoles`,
+                    `iam:PutRolePolicy`
                 ],
                 Resource: [
                     `*`

@@ -45,7 +45,7 @@ function copyS3ObjectsToDestination(foundFiles, task, s3SourceBucket, sourceS3Pa
         // Write to a key prefix, if a prefix is defined
         if (!!task.dest.key)
             // Remove a leading or trail slash
-            Key = `${task.dest.key.replace(/^\//, ``).replace(/\/$/, ``)}/${Key}`
+            Key = `${task.dest.key.replace(/^\//, ``).replace(/\/$/, ``)}/${Key}`;
 
         sourceKeys.push(Key);
 

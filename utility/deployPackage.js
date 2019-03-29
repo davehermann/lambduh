@@ -5,7 +5,7 @@ const path = require(`path`);
 const aws = require(`aws-sdk`),
     fs = require(`fs-extra`),
     mime = require(`mime-types`),
-    { Warn, Err } = require(`multi-level-logger`);
+    { Warn } = require(`multi-level-logger`);
 
 // Application Modules
 const { ReadDeploymentConfiguration } = require(`./configuration/locate`);

@@ -38,7 +38,7 @@ function startProcessing(evtData, context) {
             return NextSteps(evtData, localRoot);
         else {
             // Ignore event triggered for creation of historical record (S3 copy action + archive subpath)
-            if ((evtData.Records[0].eventName.search(/copy/i) >= 0) && (s3Source.object.key.search(/Lamb-duh\_archive\//i) >= 0)) {
+            if ((evtData.Records[0].eventName.search(/copy/i) >= 0) && (s3Source.object.key.search(/Lamb-duh_archive\//i) >= 0)) {
                 log.Debug(`Historical storage detected; no processing necessary.`);
                 return Promise.resolve();
             } else
