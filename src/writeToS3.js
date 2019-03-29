@@ -2,6 +2,7 @@
 
 const aws = require(`aws-sdk`),
     fs = require(`fs-extra`),
+    { DateTime } = require(`luxon`),
     mime = require(`mime-types`),
     path = require(`path`),
     { ReadDirectoryContents } = require(`./scanDirectory`),
@@ -114,9 +115,46 @@ function archivePath(startTime) {
     return `${startTime}/archive`;
 }
 
+function deploymentHistory(configuration) {
+    // Do nothing if the configuration explicitly blocks archiving
+    if (!!configuration.remainingTasks.history && configuration.remainingTasks.history.noHistory)
+        return Promise.resolve();
+
+    let uploadedToS3 = configuration.originalSource.Records[0].s3,
+        // Get the bucket name, and object key
+        bucket = uploadedToS3.bucket.name,
+        fileKey = uploadedToS3.object.key,
+        // Get the file name
+        filename = path.basename(fileKey),
+        // Copy to "Lamb-duh_archive/APPLICATION_NAME/DATESTAMP/FILE_NAME"
+        copyTo = `${fileKey.replace(filename, ``)}Lamb-duh_archive/${configuration.remainingTasks.applicationName}/${DateTime.fromMillis(+configuration.remainingTasks.startTime).toISO()}/${filename}`;
+
+    // Copy the file
+    let copyParams = {
+        CopySource: `/${bucket}/${fileKey}`,
+        Bucket: bucket,
+        Key: copyTo,
+    };
+
+    Debug({ [`Copy source upload to`]: copyParams });
+
+    return s3.copyObject(copyParams).promise()
+        .then(() => {
+            let deleteOriginal = {
+                Bucket: bucket,
+                Key: fileKey,
+            };
+
+            Debug({ [`Remove source`]: deleteOriginal });
+
+            return s3.deleteObject(deleteOriginal).promise();
+        });
+}
+
 module.exports.ListFilesInBucket = listFilesForArchiveProcessing;
 module.exports.RemoveProcessingFiles = removeProcessingFiles;
 module.exports.RemoveFiles = removeFiles;
 module.exports.WriteRemainingTasks = writeRemainingTasks;
 module.exports.WriteExtractedArchiveToS3 = writeArchive;
 module.exports.GetPathForArchive = archivePath;
+module.exports.DeploymentHistory = deploymentHistory;
