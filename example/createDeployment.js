@@ -86,6 +86,9 @@ function generateCompressedArchive() {
                 zip.file(fileName, fs.readFileSync(filePath));
             });
 
+            // Include the Readme
+            zip.file(`Readme.md`, fs.readFileSync(path.join(__dirname, `Readme.md`)));
+
             // Create the archive in memory
             return zip.generateAsync({ type: `nodebuffer`, compression: `DEFLATE`, compressionOptions: { level: 7 } });
         })

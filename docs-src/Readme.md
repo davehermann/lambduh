@@ -4,14 +4,15 @@
 
 ## Introduction
 
-Lamb-duh is a serverless deployment tool for AWS serverless applications using NodeJS functions.
-Lamb-duh only needs source, compressed into an archive, and will run `npm install`, and deploy to: S3, Lambda, and API Gateway.
+Lamb-duh is a serverless deployment tool for AWS serverless applications that use NodeJS JavaScript functions in Lambda.
+Lamb-duh only needs source, compressed into an archive.
+It will run `npm install`, and deploy to: S3, Lambda, and API Gateway.
 Lamb-duh doesn't care how you structure your application.
 
 1. Write your application using any directory structure that works for you
     + All of your AWS Lambda functions and modules must use **relative** paths for `require()` of local modules
 1. Include a configuration JSON file in the root of your application
-    + Defines the S3, Lambda, and/or API Gateway steps
+    + Configuration defines the S3, Lambda, and/or API Gateway steps
 1. Archive the entire application
     + .zip, .tar, and .tar.gz all supported!
 1. Drop your archive file in an S3 bucket
@@ -22,7 +23,8 @@ You're a developer.
 You have a way of working with code that works for you.
 Going serverless should work that way too.
 There are other serverless management frameworks, and AWS has a number of tools as well.
-> Why can't I just use my normal code structure, and deploy an application?
+
+## Why can't I just use my normal code structure, and deploy an application?
 
 With **Lamb-duh**, you can!
 

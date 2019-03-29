@@ -201,7 +201,7 @@ For each function:
 | memorySize | no | yes | Number | Memory size for the function <br /> **must be from the set of values allowed by Lambda** |
 | timeout | no | yes | Number | Time - in **seconds** - for the Lambda function to time out |
 | runtime | no | yes | String | Lambda runtime environment |
-| handler | no | yes | String | The name of the export from the main code file to call<br /><br />*Default:* **index** |
+| handler | no | yes | String | The name of the export from the main code file to call<br /><br />*Default:* **handler** |
 
 :::tip
 Properties than can be set on the `default` object, are noted as "In Default" in the table

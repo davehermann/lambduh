@@ -1,6 +1,7 @@
 # v1 to v2 Migration
 ## Major Changes
 + Lambda installation, local configuration and deployment **now via a CLI**
+    + Lamb-duh is now on NPM!
 + Complete, from-scratch rewrite of the codebase
 + **Lamb-duh** leverages AWS services even more to boost efficiency
 + Large deployments are considerably faster
@@ -22,9 +23,9 @@ Lamb-duh no longer supports using a default configuration.
     + the *s3:ListBucket* permission is now required for the triggering bucket where the code archive is placed to start the deployment process
     + The *lambda:DeleteAlias* permission is now required
 1. *Lambda Tasks*
-    + To keep with AWS standards, function handlers now default to `index` instead of the Lamb-duh v1.x required `lambda`.
+    + To keep with AWS standards, function handlers now default to `handler` instead of the Lamb-duh v1.x required `lambda`.
     A `handler` property has been added to both the function definition, and the task defaults, and can now be defined for all task functions or per-function.
-        + To maintain compatibility, add `"handler": "lambda"` as a setting for all existing Lambda task in the `defaults` object.
+        + To maintain v1.x compatibility, add `"handler": "lambda"` as a setting for all existing Lambda task in the `defaults` object.
 1. *API Gateway Tasks*
     + It's no longer possible to operate without a stage configured.
     As API Gateway integration is presumably for deployment, this *shouldn't* impact on production usage; however, it does break for anyone who previously ran without a stage configured.

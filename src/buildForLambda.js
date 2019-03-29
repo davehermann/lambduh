@@ -40,6 +40,10 @@ function createLambdaPackage() {
                     if (filePath.search(/^node_modules/) == 0)
                         includeFile = true;
 
+                    // Include the Readme file
+                    if (filePath == `Readme.md`)
+                        includeFile = true;
+
                     return includeFile;
                 });
 

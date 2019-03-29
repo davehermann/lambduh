@@ -1,11 +1,11 @@
 # Lamb-duh Runtime Options in AWS Lambda
 
-Lamb-duh supports options for logging, and task splitting, via environment variables.
+Lamb-duh supports options for logging, and task splitting, via **environment variables**.
 
 ## Logging
-By default, all logging is written to Cloudwatch Logs using a *WARN* level.
+By default, all logging is written to Cloudwatch Logs using a **WARN** level.
 
-When initially deploying an application via Lamb-duh, it may be beneficial to use *DEBUG* to track down any configuration issues.
+When initially deploying an application via Lamb-duh, it may be beneficial to use **DEBUG** to track down any configuration issues.
 
 ### Set Log Level
 Add the *environment variable* **log** to the function within Lambda with the **case <u>insensitive</u>** level as the value.

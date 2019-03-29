@@ -2,13 +2,14 @@
   "name": "lamb-duh",
   "version": "2.0.0",
   "description": "Stupid name. Stupidly easy Lambda deployment.",
-  "private": true,
   "scripts": {
     "docs:dev": "vuepress dev docs-src",
     "docs:build": "vuepress build docs-src",
     "postinstall": "node ./post-install.js"
   },
   "author": "Dave Hermann",
+  "license": "GPL-3.0",
+  "repository": "github:davehermann/lambduh",
   "dependencies": {
     "aws-sdk": "^2.399.0",
     "fs-extra": "^7.0.1",
