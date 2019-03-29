@@ -4,12 +4,12 @@
 
 ## 1. Install Lamb-duh source locally
 
-### Lamb-duh is available via NPM
+### Lamb-duh is now available via NPM
 
 This installs the CLI utility.
 
 ```
-npm install lamb-duh -g
+npm install lamb-duh-serverless-deployment -g
 ```
 
 :::tip
