@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Example Configuration | Lamb-duh</title>
+    <meta name="description" content="Stupid name. Stupidly simple serverless deployment to AWS.">
+    
+    
+    <link rel="preload" href="/lambduh/assets/css/0.styles.f1942610.css" as="style"><link rel="preload" href="/lambduh/assets/js/app.ff34b4b2.js" as="script"><link rel="preload" href="/lambduh/assets/js/4.52bb3f99.js" as="script"><link rel="prefetch" href="/lambduh/assets/js/10.af54ed86.js"><link rel="prefetch" href="/lambduh/assets/js/11.bc5dc81a.js"><link rel="prefetch" href="/lambduh/assets/js/12.96673b64.js"><link rel="prefetch" href="/lambduh/assets/js/2.ae4252f2.js"><link rel="prefetch" href="/lambduh/assets/js/3.a35d3ce9.js"><link rel="prefetch" href="/lambduh/assets/js/5.6bcd0b2f.js"><link rel="prefetch" href="/lambduh/assets/js/6.4115ba85.js"><link rel="prefetch" href="/lambduh/assets/js/7.bdaf11db.js"><link rel="prefetch" href="/lambduh/assets/js/8.64188126.js"><link rel="prefetch" href="/lambduh/assets/js/9.48086f72.js">
+    <link rel="stylesheet" href="/lambduh/assets/css/0.styles.f1942610.css">
+  </head>
+  <body>
+    <div id="app" data-server-rendered="true"><div class="theme-container"><header class="navbar"><div class="sidebar-button"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" viewBox="0 0 448 512" class="icon"><path fill="currentColor" d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z"></path></svg></div> <a href="/lambduh/" class="home-link router-link-active"><!----> <span class="site-name">Lamb-duh</span></a> <div class="links" style="max-width:nullpx;"><div class="search-box"><input aria-label="Search" autocomplete="off" spellcheck="false" value=""> <!----></div> <nav class="nav-links can-hide"> <a href="https://github.com/davehermann/lambduh" target="_blank" rel="noopener noreferrer" class="repo-link">
+    GitHub
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></nav></div></header> <div class="sidebar-mask"></div> <div class="sidebar"><nav class="nav-links"> <a href="https://github.com/davehermann/lambduh" target="_blank" rel="noopener noreferrer" class="repo-link">
+    GitHub
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></nav>  <ul class="sidebar-links"><li><a href="/lambduh/" class="sidebar-link">Lamb-duh</a></li><li><a href="/lambduh/GettingStarted.html" class="sidebar-link">Getting Started</a></li><li><a href="/lambduh/ManualConfiguration.html" class="sidebar-link">Initial AWS Configuration: Manual</a></li><li><a href="/lambduh/LambdaEnvironment.html" class="sidebar-link">Lamb-duh Runtime Options in AWS Lambda</a></li><li><a href="/lambduh/LambduhConfiguration.html" class="sidebar-link">Application Deployment Configuration</a></li><li><a href="/lambduh/ExampleDeployment.html" class="sidebar-link">Example Deployment</a></li><li><a href="/lambduh/CLI.html" class="sidebar-link">Lamb-duh CLI Application</a></li><li><a href="/lambduh/UpgradeToV2.html" class="sidebar-link">v1 to v2 Migration</a></li></ul> </div> <div class="page"> <div class="content"><h1 id="example-configuration"><a href="#example-configuration" aria-hidden="true" class="header-anchor">#</a> Example Configuration</h1> <p>This JSON document is the complete example configuration broken down in detail under <a href="/lambduh/LambduhConfiguration.html">Lamb-duh configuration</a>.</p> <div class="language-json extra-class"><pre class="language-json"><code><span class="token punctuation">{</span>
+    <span class="token property">&quot;applicationName&quot;</span><span class="token operator">:</span> <span class="token string">&quot;MyApplication&quot;</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;snsNotifications&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">&quot;topicArn&quot;</span><span class="token operator">:</span> <span class="token string">&quot;arn:aws:sns:us-east-1:1234567890:lamb-duh-deployment&quot;</span><span class="token punctuation">,</span>
+        <span class="token property">&quot;timeZone&quot;</span><span class="token operator">:</span> <span class="token string">&quot;America/New_York&quot;</span>
+    <span class="token punctuation">}</span>
+    <span class="token punctuation">,</span>
+    <span class="token property">&quot;taskFilters&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;tasks&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token punctuation">{</span>
+            <span class="token property">&quot;type&quot;</span><span class="token operator">:</span> <span class="token string">&quot;S3&quot;</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;disabled&quot;</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;source&quot;</span><span class="token operator">:</span> <span class="token string">&quot;./relative/path/to/static/files&quot;</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;dest&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+                <span class="token property">&quot;bucket&quot;</span><span class="token operator">:</span> <span class="token string">&quot;bucketname&quot;</span><span class="token punctuation">,</span>
+                <span class="token property">&quot;key&quot;</span><span class="token operator">:</span> <span class="token string">&quot;optional/key/prefix&quot;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{</span>
+            <span class="token property">&quot;type&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Lambda&quot;</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;disabled&quot;</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;alternatePackageJson&quot;</span><span class="token operator">:</span><span class="token string">&quot;serverless.package.json&quot;</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;compressionLevel&quot;</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;default&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+                <span class="token property">&quot;handler&quot;</span><span class="token operator">:</span> <span class="token string">&quot;lambda&quot;</span><span class="token punctuation">,</span>
+                <span class="token property">&quot;iamRoleArn&quot;</span><span class="token operator">:</span> <span class="token string">&quot;arn:aws:iam::1234567890:role/primaryRoleName&quot;</span><span class="token punctuation">,</span>
+                <span class="token property">&quot;memorySize&quot;</span><span class="token operator">:</span> <span class="token number">256</span><span class="token punctuation">,</span>
+                <span class="token property">&quot;timeout&quot;</span><span class="token operator">:</span> <span class="token number">10</span><span class="token punctuation">,</span>
+                <span class="token property">&quot;runtime&quot;</span><span class="token operator">:</span> <span class="token string">&quot;nodejs8.10&quot;</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;functions&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+                <span class="token punctuation">{</span> <span class="token property">&quot;name&quot;</span><span class="token operator">:</span> <span class="token string">&quot;lambdaFunction1&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;source&quot;</span><span class="token operator">:</span> <span class="token string">&quot;/path/to/function1.js&quot;</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token punctuation">{</span>
+                    <span class="token property">&quot;name&quot;</span><span class="token operator">:</span> <span class="token string">&quot;lambdaFunction2&quot;</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;source&quot;</span><span class="token operator">:</span> <span class="token string">&quot;/path/to/function2.js&quot;</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;iamRoleArn&quot;</span><span class="token operator">:</span> <span class="token string">&quot;arn:aws:iam::1234567890:role/alternateRoleName&quot;</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;memorySize&quot;</span><span class="token operator">:</span> <span class="token number">1024</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;timeout&quot;</span><span class="token operator">:</span> <span class="token number">5</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;runtime&quot;</span><span class="token operator">:</span> <span class="token string">&quot;nodejs6.10&quot;</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;handler&quot;</span><span class="token operator">:</span> <span class="token string">&quot;main&quot;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">]</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token punctuation">{</span>
+            <span class="token property">&quot;disabled&quot;</span><span class="token operator">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;type&quot;</span><span class="token operator">:</span> <span class="token string">&quot;ApiGateway&quot;</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;deployment&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+                <span class="token property">&quot;stage&quot;</span><span class="token operator">:</span> <span class="token string">&quot;yourStageName&quot;</span><span class="token punctuation">,</span>
+                <span class="token property">&quot;production&quot;</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+                <span class="token property">&quot;versioningLimits&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+                    <span class="token property">&quot;keep&quot;</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;expirationHours&quot;</span><span class="token operator">:</span> <span class="token number">6</span>
+                <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;cors&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token property">&quot;origin&quot;</span><span class="token operator">:</span> <span class="token string">&quot;*&quot;</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;aliasNonEndpoints&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+                <span class="token punctuation">{</span> <span class="token property">&quot;functionName&quot;</span><span class="token operator">:</span> <span class="token string">&quot;lambdaFunction1&quot;</span> <span class="token punctuation">}</span>
+            <span class="token punctuation">]</span><span class="token punctuation">,</span>
+            <span class="token property">&quot;endpoints&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+                <span class="token punctuation">{</span>
+                    <span class="token property">&quot;path&quot;</span><span class="token operator">:</span> <span class="token string">&quot;/request/path/from/root/{optionalParameters}&quot;</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;method&quot;</span><span class="token operator">:</span> <span class="token string">&quot;GET&quot;</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;functionName&quot;</span><span class="token operator">:</span> <span class="token string">&quot;lambdaFunction2&quot;</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;headers&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">{</span> <span class="token property">&quot;name&quot;</span><span class="token operator">:</span> <span class="token string">&quot;httpHeader1&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;parameterName&quot;</span><span class="token operator">:</span> <span class="token string">&quot;header1SentToLambda&quot;</span> <span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;parameters&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">{</span> <span class="token property">&quot;name&quot;</span><span class="token operator">:</span><span class="token string">&quot;queryParameter&quot;</span><span class="token punctuation">,</span> <span class="token property">&quot;parameterName&quot;</span><span class="token operator">:</span> <span class="token string">&quot;queryParameterSentToLambda&quot;</span><span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                    <span class="token property">&quot;endpointConfiguration&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+                        <span class="token property">&quot;routeProp&quot;</span><span class="token operator">:</span> <span class="token string">&quot;value&quot;</span><span class="token punctuation">,</span>
+                        <span class="token property">&quot;routeArray&quot;</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">&quot;arr1&quot;</span><span class="token punctuation">,</span> <span class="token string">&quot;arr2&quot;</span><span class="token punctuation">]</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
+</code></pre></div></div> <div class="page-edit"><!----> <!----></div> <!----> </div> <!----></div></div>
+    <script src="/lambduh/assets/js/app.ff34b4b2.js" defer></script><script src="/lambduh/assets/js/4.52bb3f99.js" defer></script>
+  </body>
+</html>

@@ -2,4 +2,3 @@ node_modules/
 .vscode/
 *.zip
 configuration.json
-docs/
