@@ -10,6 +10,7 @@
     + The number of saved aliases can be controlled, both as total numbers and amount of time
     + See **versioningLimits** in [Lamb-duh configuration: API Gateway Tasks](./LambduhConfiguration.md#api-gateway-tasks) for more details and how to turn the feature off
 + Start/Completion notifications now provided (via SNS)
++ Historical storage of the compressed archive file is available, and on by default
 
 ## Breaking Changes
 While v2.0.0 is a total rewrite of the codebase from scratch, every effort has been made to maintain a nearly identical JSON configuration format.

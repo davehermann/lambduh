@@ -40,9 +40,12 @@ A **lamb-duh.configuration.json** file will be generated, as will an **example.z
 + Deploy `./example.zip` to see what's creating in S3, Lambda, and API Gateway
 
 :::tip Deployment options
-The archive can be deployed by configuring and running the [CLI utility deployment](./CLI.md#application-deployment), or just copying the archive file to the trigger S3 bucket via the AWS Console
+The archive can be deployed by configuring and running the [CLI utility deployment](./CLI.md#application-deployment), or just copying the archive file to your trigger S3 bucket via the AWS Console
 :::
 
 :::warning Check the results
-View your AWS resources (S3, Lambda, API Gateway) to see what was deployed
+View your AWS resources (S3, Lambda, API Gateway) to see what was deployed.
+
+By default, *example.zip* will be stored using Lamb-duh's historical storage.
+See [history](/LambduhConfiguration.md#history) for more details.
 :::

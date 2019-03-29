@@ -37,9 +37,9 @@ function startProcessing(evtData, context) {
         if (fileName.search(/\.lambduh\.txt$/) >= 0)
             return NextSteps(evtData, localRoot);
         else {
-            // Ignore archive creation (S3 copy action + archive subpath)
+            // Ignore event triggered for creation of historical record (S3 copy action + archive subpath)
             if ((evtData.Records[0].eventName.search(/copy/i) >= 0) && (s3Source.object.key.search(/Lamb-duh\_archive\//i) >= 0)) {
-                log.Debug(`Historical archive creation detected; ignoring file.`);
+                log.Debug(`Historical storage detected; no processing necessary.`);
                 return Promise.resolve();
             } else
                 return Initialize(evtData, context, localRoot, extractionLocation);

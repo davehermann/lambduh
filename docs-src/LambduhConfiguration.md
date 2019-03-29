@@ -13,6 +13,7 @@ The file should be named `lamb-duh.configuration.json` and should appear at the 
 ```json
 {
     "applicationName": "MyApplication",
+    "history": {},
     "snsNotifications": {},
     "taskFilters": {},
     "tasks": []
@@ -22,10 +23,27 @@ The file should be named `lamb-duh.configuration.json` and should appear at the 
 | Property | Required | Type | Description |
 | -------- | -------- | ---- | ----------- |
 | applicationName | yes | String | Used as part of the AWS Lambda function naming, and the API Gateway name for the API<br />*Functions will all be **ld_{applicationName}_{FUNCTION-NAME}*** |
+| history | no | Map | Specify options for post-deployment storage of the deployed compressed archive file |
 | snsNotifications | no | Map | Used to send a message when processing starts, and again when it completes<br /> [See snsNotifications](#snsnotifications)
 | taskFilters | no | Map | Filter the deployment to a sub-set of the configuration<br />*Useful when the array of Lambda functions or API Gateway endpoints becomes too large to manually manage when developing/testing only a few*<br /> [See taskFilters](#taskfilters)
 | tasks | yes | Array&lt;Map&gt; | Set of tasks to be performed as part of deployment<br /> [See tasks](#tasks) |
 
+### history
+
+By default, Lamb-duh will store the compressed archive file after the application has been deployed.
+The file will be moved to `Lamb-duh_archive/{applicationName}/{timestamp}/{archive-file-name}` in the bucket - and under the key prefix - where the archive file was originally uploaded to trigger the Lamb-duh process.
+
+At present, the only option available is to turn off the historical storage action.
+
+```json
+{
+    "noHistory": true
+}
+```
+
+| Property | Required | Type | Description |
+| -------- | -------- | ---- | ----------- |
+| noHistory | no | Boolean | Turns off the historical storage. The compressed archive file will remain in the bucket at the original upload key after deployment completes |
 
 ### snsNotifications
 
