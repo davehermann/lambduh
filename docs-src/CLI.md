@@ -6,13 +6,14 @@ Each command will walk through its process as noted.
 
 [[toc]]
 
-## AWS Credentials
+:::danger AWS Credentials
 
 The Lamb-duh CLI expects proper configuration of AWS shared credentials.
 The CLI interface will ask for, and when necessary will store, the profile name if you use a shared credentials file with multiple profiles.
 If you have only the default profile, prefer to select a profile via environment variables, or do not use a shared credentials file: **leave the profile as "default" when asked by the CLI**
 
 The Lamb-duh CLI will note what IAM policy permissions it needs to perform its tasks when it starts, and can also supply a JSON policy document.
+:::
 
 ## Initial AWS Configuration: Automated
 
@@ -32,6 +33,19 @@ Lamb-duh will install to the same region where the bucket exists.
 
 ### Running
 The process will ask for you to name the IAM role, and Lambda function, which will be created, and ask for you to select the trigger bucket from your account's list of S3 buckets.
+
+## Push Code Updates to AWS: Automated
+
++ Apply latest version of source changes to your configured Lamb-duh deployment function in AWS Lambda
+
+```
+lamb-duh aws-update
+```
+
+The update will ask for an AWS region, and then attempt to automatically identify your Lamb-duh function based on the tag: "Lamb-duh Resource" == "true".
+This tag is added by the automated `lamb-duh aws-install` process.
+
+You will be asked to provied the function ARN for your Lamb-duh function if it can't be automatically found.
 
 ## Application Deployment
 
