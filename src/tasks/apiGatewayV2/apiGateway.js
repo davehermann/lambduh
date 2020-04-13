@@ -7,6 +7,7 @@
 const aws = require(`aws-sdk`),
     { VersionAndAliasFunction } = require(`../apiGateway/lambdaIntegration/versioningAndAliases`),
     { ConfigureResource } = require(`./apiResources/configureResource`),
+    { DeployStage } = require(`./deployStage`),
     { Trace, Debug, Info } = require(`../../logging`);
 
 const apiGatewayV2 = new aws.ApiGatewayV2({ apiVersion: `2018-11-29` });
@@ -37,8 +38,9 @@ function apiGatewayV2Task(task, remainingTasks) {
         return processNextService(task, remainingTasks)
             .then(() => { return false; });
     else
-        return Promise.resolve()
-            .then(() => { return true; });
+        return DeployStage(task, remainingTasks)
+            // Deployment is complete when all stages are deployed
+            .then(() => { return task.stagesToDeploy.length == 0; });
 }
 
 function getApiIdForApplicationName(applicationName, task) {
