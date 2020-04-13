@@ -3,6 +3,7 @@
 const aws = require(`aws-sdk`),
     { DateTime } = require(`luxon`),
     { APIGatewayTask } = require(`./apiGateway/apiGateway`),
+    { APIGatewayV2Task } = require(`./apiGatewayV2/apiGateway`),
     { LambdaTask } = require(`./lambda/lambda`),
     { S3Task } = require(`./s3/s3`),
     { Trace, Warn } = require(`../logging`),
@@ -44,6 +45,11 @@ function nextTask(configuration, s3Source, localRoot) {
             runningTask = Promise.resolve(true);
 
         switch (currentTask.type.toLowerCase()) {
+            case `apigatewayv2`:
+                // API Gateway V2 task determines its own completion status
+                runningTask = APIGatewayV2Task(currentTask, configuration.remainingTasks);
+                break;
+
             case `apigateway`:
                 // API Gateway task determines its own completion status
                 runningTask = APIGatewayTask(currentTask, configuration.remainingTasks);

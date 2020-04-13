@@ -16,7 +16,7 @@ const _functionConfiguration = {
     Handler: `deploy.handler`,
     MemorySize: 2048,
     Timeout: 120,
-    Runtime: `nodejs8.10`,
+    Runtime: `nodejs12.x`,
 };
 
 /**
@@ -47,17 +47,17 @@ function addOrReplaceS3Trigger(triggerList, lambdaFunctionConfigurations) {
     triggerList.forEach(newTrigger => {
         let idxTrigger = lambdaFunctionConfigurations.findIndex(trigger => {
             let hasEvent = !!trigger.Events.find(evt => { return evt == newTrigger.Events[0]; });
-    
+
             let matchesFilter = true;
             newTrigger.Filter.Key.FilterRules.forEach(newRule => {
                 let findRule = trigger.Filter.Key.FilterRules.find(rule => { return (rule.Name.toLowerCase() == newRule.Name.toLowerCase()) && (rule.Value == newRule.Value); });
                 if (!findRule)
                     matchesFilter = false;
             });
-    
+
             return (hasEvent && matchesFilter);
         });
-    
+
         if (idxTrigger >= 0)
             lambdaFunctionConfigurations.splice(idxTrigger, 1, newTrigger);
         else

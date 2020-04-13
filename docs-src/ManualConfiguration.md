@@ -205,7 +205,7 @@ If you experience any issues with the process timing out during a deployment, **
 + Add S3 trigger for Lamb-duh continuing deployment
     + For your trigger bucket
     + All object create events
-    + *Suffix:* **.lambduh.txt**
+    + *Suffix:* **.lamb-duh.txt**
 
 ## Optional: Add Tags
 
