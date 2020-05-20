@@ -1,6 +1,6 @@
 {
   "name": "lamb-duh-serverless-deployment",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Stupid name. Stupidly easy Lambda deployment.",
   "scripts": {
     "docs:dev": "vuepress dev docs-src",
