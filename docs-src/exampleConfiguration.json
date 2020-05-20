@@ -1,5 +1,15 @@
 {
     "applicationName": "MyApplication",
+    "npm": {
+        "authorization": [
+            { "registry": "npm.pkg.github.com", "token": "abcdef0123456789" },
+            { "registry": "registry.npmjs.org", "token": "0123456789abcdef" }
+        ],
+        "registry": [
+            { "scope": "myorg", "url": "https://npm.pkg.github.com/myorg" },
+            { "url": "https://registry.npmjs.org" }
+        ]
+    },
     "snsNotifications": {
         "topicArn": "arn:aws:sns:us-east-1:1234567890:lamb-duh-deployment",
         "timeZone": "America/New_York"
@@ -50,7 +60,7 @@
                 "versioningLimits": {
                     "keep": 2,
                     "expirationHours": 6
-                },
+                }
             },
             "cors": { "origin": "*" },
             "aliasNonEndpoints": [

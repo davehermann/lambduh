@@ -14,6 +14,7 @@ The file should be named `lamb-duh.configuration.json` and should appear at the 
 {
     "applicationName": "MyApplication",
     "history": {},
+    "npm": {},
     "snsNotifications": {},
     "taskFilters": {},
     "tasks": []
@@ -24,6 +25,7 @@ The file should be named `lamb-duh.configuration.json` and should appear at the 
 | -------- | -------- | ---- | ----------- |
 | applicationName | yes | String | Used as part of the AWS Lambda function naming, and the API Gateway name for the API<br />*Functions will all be **ld_{applicationName}_{FUNCTION-NAME}*** |
 | history | no | Map | Specify options for post-deployment storage of the deployed compressed archive file |
+| npm | no | Map | Configure authorization and scopes for registries |
 | snsNotifications | no | Map | Used to send a message when processing starts, and again when it completes<br /> [See snsNotifications](#snsnotifications)
 | taskFilters | no | Map | Filter the deployment to a sub-set of the configuration<br />*Useful when the array of Lambda functions or API Gateway endpoints becomes too large to manually manage when developing/testing only a few*<br /> [See taskFilters](#taskfilters)
 | tasks | yes | Array&lt;Map&gt; | Set of tasks to be performed as part of deployment<br /> [See tasks](#tasks) |
@@ -44,6 +46,26 @@ At present, the only option available is to turn off the historical storage acti
 | Property | Required | Type | Description |
 | -------- | -------- | ---- | ----------- |
 | noHistory | no | Boolean | Turns off the historical storage. The compressed archive file will remain in the bucket at the original upload key after deployment completes |
+
+### npm
+
+If NPM authentication, or other package registries (e.g. [Github Package Registry](https://github.com/features/packages)), are needed, Lamb-duh enables easy configuration for both authentication and package scopes.
+
+```json
+{
+    "authorization": [
+        { "registry": "npm.pkg.github.com", "token": "ABCDEF0123456789" }
+    ],
+    "registry": [
+        { "scope": "exampleorg", "url": "https://npm.pkg.github.com/exampleorg" }
+    ]
+}
+```
+
+| Property | Required | Type | Description |
+| -------- | -------- | ---- | ----------- |
+| authorization | no | Array&lt;Map&gt; | Objects defining the authentication token for NPM registries<br /><ul><li>`registry` - *required* - The domain name for the registry</li><li>`token` - *required* - The authorization token used to access the registry</li></ul> |
+| registry | no | Array&lt;Map&gt; | Objects defining the registry(ies) and scope(s) to be utilized<br /><ul><li>`scope` - *optional* - The scope to use with the registry located at the URL (with or without leading "@")</li><li>`url` - *required* - Full URL for the registry endpoint</li></ul>
 
 ### snsNotifications
 
@@ -77,7 +99,7 @@ Lamb-duh will auto-configure *apiGateway* if only the *lambda* key is included.
 
 ## Tasks
 
-Tasks is an array of objects defining deployment steps with different options based on the **type** property.  There are three types of deployment tasks supported by Lamb-duh: S3, Lambda, and API Gateway. 
+Tasks is an array of objects defining deployment steps with different options based on the **type** property.  There are three types of deployment tasks supported by Lamb-duh: S3, Lambda, and API Gateway.
 
 ### S3 Tasks
 

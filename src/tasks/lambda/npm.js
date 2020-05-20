@@ -10,7 +10,7 @@ const aws = require(`aws-sdk`),
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
-function configureNpm(task, localRoot, codeLocation, s3Source, startTime, functionMain, npmRequires) {
+function configureNpm({ task, localRoot, codeLocation, s3Source, startTime, functionMain, npmRequires, npmConfig }) {
     // Check the function's S3 location for an npm_modules directory, and simply use that if it exists
     // Even if we haven't detected NPM modules, always include a function-specific node_modules directory
     return ListFilesInBucket(s3Source.bucket.name, `${GetPathForArchive(startTime)}/${path.dirname(functionMain)}/node_modules/`)
@@ -20,37 +20,31 @@ function configureNpm(task, localRoot, codeLocation, s3Source, startTime, functi
                 return Promise.resolve();
             } else {
                 // Run NPM in the file system
-                return npmInstall(task, s3Source, localRoot, codeLocation, startTime, npmRequires);
+                return npmInstall({ task, s3Source, localRoot, codeLocation, startTime, npmRequires, npmConfig });
             }
         });
 }
 
-function npmInstall(task, s3Source, localRoot, codeLocation, startTime, npmRequires) {
-    return setPackageJSON(task, s3Source, codeLocation, startTime)
-        .then(packageJSON => {
-            // If the AWS SDK is required, and it appears in the package JSON's dependencies, install it
-            // Otherwise, remove it from the list
-            let unneededModules = builtinModules.concat([`aws-sdk`]);
-            for (let idx = npmRequires.length - 1; idx >= 0; idx--) {
-                let moduleName = npmRequires[idx];
+async function npmInstall({ task, s3Source, localRoot, codeLocation, startTime, npmRequires, npmConfig }) {
+    let packageJSON = await setPackageJSON(task, s3Source, codeLocation, startTime);
 
-                if ((unneededModules.indexOf(moduleName) >= 0) && (!packageJSON.dependencies || !packageJSON.dependencies[moduleName]))
-                    npmRequires.splice(idx, 1);
-            }
+    // If the AWS SDK is required, and it appears in the package JSON's dependencies, install it
+    // Otherwise, remove it from the list
+    let unneededModules = builtinModules.concat([`aws-sdk`]);
+    for (let idx = npmRequires.length - 1; idx >= 0; idx--) {
+        let moduleName = npmRequires[idx];
 
-            return npmRequires;
-        })
-        .then(npmRequires => {
-            Trace({ npmRequires }, true);
+        if ((unneededModules.indexOf(moduleName) >= 0) && (!packageJSON.dependencies || !packageJSON.dependencies[moduleName]))
+            npmRequires.splice(idx, 1);
+    }
 
-            if (npmRequires.length > 0)
-                return setNpmrc(localRoot, codeLocation)
-                    .then(() => runNpm(localRoot, codeLocation, npmRequires));
-            else {
-                Debug(`No required NPM modules`);
-                return Promise.resolve();
-            }
-        });
+    Trace({ npmRequires }, true);
+
+    if (npmRequires.length > 0) {
+        await setNpmrc({ localRoot, codeLocation, npmConfig });
+        await runNpm(localRoot, codeLocation, npmRequires);
+    } else
+        Debug(`No required NPM modules`);
 }
 
 function setPackageJSON(task, s3Source, codeLocation, startTime) {
@@ -82,22 +76,53 @@ function setPackageJSON(task, s3Source, codeLocation, startTime) {
         });
 }
 
-function setNpmrc(localRoot, codeLocation) {
+async function setNpmrc({ localRoot, codeLocation, npmConfig }) {
     // Read the template file from this function
-    return fs.readFile(path.join(process.cwd(), `npmrc_template`), { encoding: `utf8` })
-        .then(npmrc => {
-            Trace({ "npmrc template": npmrc }, true);
+    let npmrc = await fs.readFile(path.join(process.cwd(), `npmrc_template`), { encoding: `utf8` });
+    Trace({ "npmrc template": npmrc }, true);
 
-            npmrc = npmrc
-                .replace(/%EXTRACTIONLOCATION%/g, codeLocation)
-                .replace(/%LOCALROOT%/g, localRoot);
+    npmrc = npmrc
+        .replace(/%EXTRACTIONLOCATION%/g, codeLocation)
+        .replace(/%LOCALROOT%/g, localRoot);
 
-            Debug({ "npmrc": npmrc }, true);
+    // If the configuration contains an NPM section, process it here
+    if (!!npmConfig) {
+        let modifyNpmrc = [];
 
-            let npmrcFile = path.join(codeLocation, `.npmrc`);
-            Debug(`Writing to ${npmrcFile}`);
-            return fs.writeFile(npmrcFile, npmrc, { encoding: `utf8` });
-        });
+        // Include authorization tokens
+        if (!!npmConfig.authorization) {
+            let tokens = npmConfig.authorization.map(auth => { return `//${auth.registry}/:_authToken=${auth.token}`; }).join(`\n`);
+            modifyNpmrc.push(tokens);
+        }
+
+        // Include scoped registries
+        if (!!npmConfig.registry) {
+            let registries = npmConfig.registry.map(registry => {
+                let scope = ``;
+
+                if (!!registry.scope) {
+                    // Add the @ sign to a scope, if not included
+                    if (registry.scope.substr(0, 1) !== `@`)
+                        scope += `@`;
+
+                    scope += `${registry.scope}:`;
+                }
+
+                return `${scope}registry=${registry.url}`;
+            }).join(`\n`);
+            modifyNpmrc.push(registries);
+        }
+
+        if (modifyNpmrc.length > 0)
+            npmrc = `${modifyNpmrc.join(`\n`)}\n${npmrc}`;
+    }
+
+    Debug({ npmrc }, true);
+
+    let npmrcFile = path.join(codeLocation, `.npmrc`);
+    Debug(`Writing to ${npmrcFile}`);
+
+    await fs.writeFile(npmrcFile, npmrc, { encoding: `utf8` });
 }
 
 function runNpm(localRoot, codeLocation, npmRequires) {
