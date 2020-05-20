@@ -43,7 +43,7 @@ function deployFunction(task, remainingTasks, s3Source, localRoot) {
     return CleanTemporaryRoot(localRoot)
         .then(() => { Debug(`Walk the code, and copy all requires`); })
         .then(() => prepareCodeFiles(codeLocation, s3Source, remainingTasks.startTime.valueOf(), [nextFunction.source]))
-        .then(npmRequires => ConfigureNPM(task, localRoot, codeLocation, s3Source, remainingTasks.startTime.valueOf(), nextFunction.source, npmRequires))
+        .then(npmRequires => ConfigureNPM({ task, localRoot, codeLocation, s3Source, startTime: remainingTasks.startTime.valueOf(), functionMain: nextFunction.source, npmRequires, npmConfig: remainingTasks.npm }))
         .then(() => GenerateZip(codeLocation, functionName, task))
         .then(zipAsBuffer => updateFunctionInLambda(zipAsBuffer, nextFunction, functionName, task));
 }
