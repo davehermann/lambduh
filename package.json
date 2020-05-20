@@ -11,16 +11,16 @@
   "license": "GPL-3.0",
   "repository": "github:davehermann/lambduh",
   "dependencies": {
-    "aws-sdk": "^2.656.0",
+    "aws-sdk": "^2.680.0",
     "fs-extra": "^7.0.1",
     "inquirer": "^6.5.2",
-    "jszip": "^3.3.0",
-    "mime-types": "^2.1.26",
+    "jszip": "^3.4.0",
+    "mime-types": "^2.1.27",
     "multi-level-logger": "^1.3.0"
   },
   "devDependencies": {
     "eslint": "^5.16.0",
-    "vuepress": "^1.4.1",
+    "vuepress": "^1.5.0",
     "webpack-dev-middleware": "^3.7.2"
   },
   "bin": {
