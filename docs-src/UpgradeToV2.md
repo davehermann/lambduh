@@ -9,7 +9,7 @@
     + S3 deployments can have the endpoint string automatically updated
     + For local testing/manual updates: following deployment the log will contain the correct endpoint, and using the SNS notification will supply it via SNS.
     + The number of saved aliases can be controlled, both as total numbers and amount of time
-    + See **versioningLimits** in [Lamb-duh configuration: API Gateway Tasks](./LambduhConfiguration.md#api-gateway-tasks) for more details and how to turn the feature off
+    + See **versioningLimits** in [Lamb-duh configuration: API Gateway Tasks](./LambduhConfiguration.md#api-gateway-rest-apis-tasks) for more details and how to turn the feature off
 + Start/Completion notifications now provided (via SNS)
 + Historical storage of the compressed archive file is available, and on by default
 
