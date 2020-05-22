@@ -1,9 +1,9 @@
 // Node Modules
-const path = require(`path`);
+const fs = require(`fs`),
+    path = require(`path`);
 
 // NPM Modules
-const fs = require(`fs-extra`),
-    inquirer = require(`inquirer`),
+const inquirer = require(`inquirer`),
     jsZip = require(`jszip`),
     { IncludeTimestamp, Warn } = require(`multi-level-logger`);
 
@@ -65,7 +65,7 @@ function generateConfiguration() {
 
             configurationTemplate.tasks.find(task => { return task.type == `Lambda`; }).default.iamRoleArn = answers.roleArn;
 
-            return fs.writeFile(path.join(__dirname, `src`, `lamb-duh.configuration.json`), JSON.stringify(configurationTemplate, null, 4), { encoding: `utf8` });
+            return fs.promises.writeFile(path.join(__dirname, `src`, `lamb-duh.configuration.json`), JSON.stringify(configurationTemplate, null, 4), { encoding: `utf8` });
         });
 }
 
@@ -92,7 +92,7 @@ function generateCompressedArchive() {
             // Create the archive in memory
             return zip.generateAsync({ type: `nodebuffer`, compression: `DEFLATE`, compressionOptions: { level: 7 } });
         })
-        .then(zippedBuffer => fs.writeFile(path.join(__dirname, `example.zip`), zippedBuffer))
+        .then(zippedBuffer => fs.promises.writeFile(path.join(__dirname, `example.zip`), zippedBuffer))
         .then(() => {
             Warn(`\nCompressed archive written to ${path.join(__dirname, `example.zip`)}.`);
             Warn(`\nDeploy by running "lamb-duh deploy-init" followed by "lamb-duh deploy" in ${__dirname}.`);

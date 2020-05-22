@@ -2,10 +2,15 @@
 
 /* eslint-disable no-console */
 
-const fs = require(`fs-extra`),
-    jsZip = require(`jszip`),
-    path = require(`path`),
-    { ReadDirectoryContents } = require(`./scanDirectory`);
+// Node Modules
+const fs = require(`fs`),
+    path = require(`path`);
+
+// NPM Modules
+const jsZip = require(`jszip`);
+
+// Application Modules
+const { ReadDirectoryContents } = require(`./scanDirectory`);
 
 let useDirectory = path.normalize(__dirname),
     zipOutput = `../Lambda Deployment Package.zip`;
@@ -66,7 +71,7 @@ function createLambdaPackage() {
 
             return zip.generateAsync(zipOptions);
         })
-        .then(zippedBuffer => fs.writeFile(path.join(useDirectory, zipOutput), zippedBuffer))
+        .then(zippedBuffer => fs.promises.writeFile(path.join(useDirectory, zipOutput), zippedBuffer))
         .then(() => { console.log(`Compression completed to "${zipOutput}"`); });
 }
 

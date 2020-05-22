@@ -1,10 +1,11 @@
 "use strict";
 
-const fs = require(`fs-extra`),
+// Node Modules
+const fs = require(`fs`),
     path = require(`path`);
 
 function getAllFilePathsInDirectory(searchPath) {
-    return fs.readdir(searchPath)
+    return fs.promises.readdir(searchPath)
         .then(directoryObjects => directoryContents(searchPath, directoryObjects));
 }
 
@@ -16,7 +17,7 @@ function directoryContents(searchPath, directoryObjects, foundFiles) {
         let fsObjectName = directoryObjects.shift();
 
         let objectPath = path.join(searchPath, fsObjectName);
-        return fs.stat(objectPath)
+        return fs.promises.stat(objectPath)
             .then(stats => {
                 let pHandler = Promise.resolve();
 

@@ -1,16 +1,17 @@
 "use strict";
 
 // Node Modules
-const path = require(`path`);
+const fs = require(`fs`),
+    path = require(`path`);
 
 // NPM Modules
 const aws = require(`aws-sdk`),
-    fs = require(`fs-extra`),
     jsZip = require(`jszip`),
     tar = require(`tar`);
 
 // Application Modules
-const log = require(`./logging`);
+const { CreatePathParts, RemovePath } = require(`./fsUtility`),
+    log = require(`./logging`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
 
@@ -19,15 +20,15 @@ function cleanTemporaryRoot(localRoot) {
     log.Trace(`Checking ${localRoot} for any prior runs of this instance with remaining data`);
 
     // Use fs.stat to check for the existance of the temporary directory
-    return fs.stat(localRoot)
+    return fs.promises.stat(localRoot)
         .then(() => {
             // If the directory exists, it needs to be removed
             log.Trace(`Cleaning ${localRoot} of found data`);
 
-            return fs.remove(localRoot);
+            return RemovePath(localRoot);
         })
         .catch(err => {
-            // If the directory does not exist, fs.stat throws and error and we can continue
+            // If the directory does not exist, fs.stat throws an error and we can continue
             if (err.message.search(/no such file or directory/g) >= 0) {
                 log.Trace(`${localRoot} does not exist`);
                 return null;
@@ -41,7 +42,7 @@ function cleanTemporaryRoot(localRoot) {
 function extractArchive(s3Record, extractionLocation) {
     log.Debug(`Extracting Code Archive`);
 
-    let pExtract = fs.ensureDir(extractionLocation);
+    let pExtract = CreatePathParts(extractionLocation);
 
     // Support for tarballs
     if (s3Record.object.key.search(/\.tar/g) > 0) {
@@ -105,9 +106,9 @@ function writeZipContents(contentsZip, extractionLocation, remainingFileNames) {
                     log.Trace(`Writing to ${absolutePathForFile}`);
 
                     // Ensure the directory exists
-                    return fs.ensureDir(path.dirname(absolutePathForFile))
+                    return CreatePathParts(absolutePathForFile, true)
                         // Write the file
-                        .then(() => fs.writeFile(absolutePathForFile, fileContent));
+                        .then(() => fs.promises.writeFile(absolutePathForFile, fileContent));
                 })
                 .then(() => writeZipContents(contentsZip, extractionLocation, remainingFileNames));
         else

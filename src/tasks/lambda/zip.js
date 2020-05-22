@@ -1,8 +1,13 @@
 "use strict";
 
-const fs = require(`fs-extra`),
-    jsZip = require(`jszip`),
-    { ReadDirectoryContents } = require(`../../scanDirectory`),
+// Node Modules
+const fs = require(`fs`);
+
+// NPM Modules
+const jsZip = require(`jszip`);
+
+// Application  Modules
+const { ReadDirectoryContents } = require(`../../scanDirectory`),
     { Trace, Debug, Info } = require(`../../logging`);
 
 function generateZip(codeLocation, functionName, task) {

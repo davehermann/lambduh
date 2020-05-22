@@ -1,20 +1,20 @@
 // Node Modules
-const path = require(`path`);
+const fs = require(`fs`),
+    path = require(`path`);
 
 // NPM Modules
-const fs = require(`fs-extra`),
-    { Err } = require(`multi-level-logger`);
+const { Err } = require(`multi-level-logger`);
 
 /**
  * Find the utility configuration file anywhere up the current path
- * @param {string | Array} remainingLocations 
+ * @param {string | Array} remainingLocations
  */
 function locateConfigurationFile(remainingLocations) {
     if (typeof remainingLocations == `string`)
         remainingLocations = remainingLocations.split(path.sep);
 
     if (remainingLocations.length > 0) {
-        return fs.readFile(path.join(remainingLocations.join(path.sep), `lamb-duh.deployment.json`))
+        return fs.promises.readFile(path.join(remainingLocations.join(path.sep), `lamb-duh.deployment.json`))
             .then(contents => {
                 return Promise.resolve({ contents, remainingLocations });
             })

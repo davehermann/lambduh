@@ -1,11 +1,16 @@
 "use strict";
 
+// Node Modules
+const fs = require(`fs`),
+    path = require(`path`);
+
+// NPM Modules
 const aws = require(`aws-sdk`),
-    fs = require(`fs-extra`),
     { DateTime } = require(`luxon`),
-    mime = require(`mime-types`),
-    path = require(`path`),
-    { ReadDirectoryContents } = require(`./scanDirectory`),
+    mime = require(`mime-types`);
+
+// Application Modules
+const { ReadDirectoryContents } = require(`./scanDirectory`),
     { Trace, Debug, Warn } = require(`./logging`);
 
 const s3 = new aws.S3({ apiVersion: `2006-03-01` });
@@ -92,7 +97,7 @@ function writeSystemFilesToS3(s3Source, extractionLocation, startTime, remaining
     if (remainingFiles.length > 0) {
         let nextFile = remainingFiles.shift();
 
-        return fs.readFile(nextFile)
+        return fs.promises.readFile(nextFile)
             .then(fileContents => {
                 let objectParams = {
                     Bucket: s3Source.bucket.name,

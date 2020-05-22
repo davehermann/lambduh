@@ -1,11 +1,17 @@
 "use strict";
 
-const aws = require(`aws-sdk`),
-    fs = require(`fs-extra`),
-    path = require(`path`),
-    { ConfigureNPM } = require(`./npm`),
+// Node Modules
+const fs = require(`fs`),
+    path = require(`path`);
+
+// NPM Modules
+const aws = require(`aws-sdk`);
+
+// Application Modules
+const { ConfigureNPM } = require(`./npm`),
     { GenerateZip } = require(`./zip`),
     { CleanTemporaryRoot } = require(`../../extractArchive`),
+    { CreatePathParts } = require(`../../fsUtility`),
     { Dev, Trace, Debug, Info } = require(`../../logging`),
     { GetPathForArchive } = require(`../../writeToS3`);
 
@@ -119,8 +125,8 @@ function prepareCodeFiles(codeLocation, s3Source, startTime, filesToProcess, npm
                 .then(sourceFile => {
                     // Save to disk
                     Debug(`Writing S3 contents to ${destination}`);
-                    return fs.ensureDir(path.dirname(destination))
-                        .then(() => fs.writeFile(destination, sourceFile, { encoding: `utf8` }))
+                    return CreatePathParts(path.dirname(destination))
+                        .then(() => fs.promises.writeFile(destination, sourceFile, { encoding: `utf8` }))
                         .then(() => {
                             writtenPaths.push(destination);
                             Trace(`${destination} written to disk`);

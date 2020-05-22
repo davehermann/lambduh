@@ -1,9 +1,9 @@
 // Node Modules
-const path = require(`path`);
+const fs = require(`fs`),
+    path = require(`path`);
 
 // NPM Modules
 const aws = require(`aws-sdk`),
-    fs = require(`fs-extra`),
     inquirer = require(`inquirer`),
     { Trace, Debug, Info, Warn } = require(`multi-level-logger`);
 
@@ -25,7 +25,7 @@ function findLambduhConfiguration() {
         .then(config => { return !!config ? config.lambduhConfigurationFile : null; })
         .then(specifiedLocation => { return specifiedLocation || path.join(process.cwd(), `lamb-duh.configuration.json`); })
         // Read the JSON file at the path
-        .then(configFilePath => fs.readFile(configFilePath, { encoding: `utf8` }))
+        .then(configFilePath => fs.promises.readFile(configFilePath, { encoding: `utf8` }))
         .then(config => { return JSON.parse(config); });
 }
 
@@ -59,9 +59,9 @@ function extractS3Tasks(configuration) {
 
 /**
  * Retrieve the entire role list for the user
- * @param {Array<map>} foundRoles - List of roles found so far 
+ * @param {Array<map>} foundRoles - List of roles found so far
  * @param {String} Marker - AWS SDK marker for next page of results
- * @returns {Array<map>} All found roles 
+ * @returns {Array<map>} All found roles
  */
 function listAllRoles(foundRoles, Marker) {
     if (!!Marker || !foundRoles) {
@@ -80,8 +80,8 @@ function listAllRoles(foundRoles, Marker) {
 
 /**
  * Pull full details for each role as the listRoles function does not include Tags (despite including a Tags property)
- * @param {Array<map>} roleList - remaining roles to pull 
- * @param {Array<map>} roleData - complete list of found role data 
+ * @param {Array<map>} roleList - remaining roles to pull
+ * @param {Array<map>} roleData - complete list of found role data
  */
 function getAllRoles(roleList, roleData) {
     if (!roleData)

@@ -1,9 +1,9 @@
 // Node Modules
-const path = require(`path`);
+const fs = require(`fs`),
+    path = require(`path`);
 
 // NPM Modules
 const aws = require(`aws-sdk`),
-    fs = require(`fs-extra`),
     mime = require(`mime-types`),
     { Warn } = require(`multi-level-logger`);
 
