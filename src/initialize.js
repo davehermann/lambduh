@@ -1,8 +1,13 @@
 "use strict";
 
-const { DateTime } = require(`luxon`),
-    fs = require(`fs-extra`),
-    { CleanTemporaryRoot, ExtractArchive } = require(`./extractArchive`),
+// Node Modules
+const fs = require(`fs`);
+
+// NPM Modules
+const { DateTime } = require(`luxon`);
+
+// Application Modules
+const { CleanTemporaryRoot, ExtractArchive } = require(`./extractArchive`),
     log = require(`./logging`),
     { SetNotificationConfiguration, StartupNotification } = require(`./notifications`),
     { FunctionConfiguration } = require(`./tasks/lambda/lambda`),
@@ -62,7 +67,7 @@ function initialize(evtData, context, localRoot, extractionLocation) {
 
 function loadConfiguration(extractionLocation) {
     // Read ~/lamb-duh.configuration.json from the extracted files
-    return fs.readFile(`${extractionLocation}/lamb-duh.configuration.json`, `utf8`)
+    return fs.promises.readFile(`${extractionLocation}/lamb-duh.configuration.json`, `utf8`)
         .then(configurationFileContents => {
             let configuration = JSON.parse(configurationFileContents);
             log.Dev({ "Loaded Configuration": configuration }, true);

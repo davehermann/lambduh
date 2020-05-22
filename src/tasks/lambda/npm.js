@@ -1,10 +1,16 @@
 "use strict";
 
-const aws = require(`aws-sdk`),
-    builtinModules = require(`builtin-modules`),
-    fs = require(`fs-extra`),
+// Node Modules
+const fs = require(`fs`),
     path = require(`path`),
-    spawn = require(`child_process`).spawn,
+    spawn = require(`child_process`).spawn;
+
+// NPM Modules
+const aws = require(`aws-sdk`),
+    builtinModules = require(`builtin-modules`);
+
+// Application Modules
+const { CreatePathParts } = require(`../../fsUtility`),
     { Dev, Trace, Debug, Info, Warn, Fatal } = require(`../../logging`),
     { GetPathForArchive, ListFilesInBucket } = require(`../../writeToS3`);
 
@@ -71,14 +77,14 @@ function setPackageJSON(task, s3Source, codeLocation, startTime) {
             // Write to the file system at the function root
             let writeLocation = path.join(codeLocation, `package.json`);
             Debug(`Writing package.json to ${writeLocation}`);
-            return fs.writeFile(writeLocation, JSON.stringify(packageJSON), { encoding: `utf8` })
+            return fs.promises.writeFile(writeLocation, JSON.stringify(packageJSON), { encoding: `utf8` })
                 .then(() => { return packageJSON; });
         });
 }
 
 async function setNpmrc({ localRoot, codeLocation, npmConfig }) {
     // Read the template file from this function
-    let npmrc = await fs.readFile(path.join(process.cwd(), `npmrc_template`), { encoding: `utf8` });
+    let npmrc = await fs.promises.readFile(path.join(process.cwd(), `npmrc_template`), { encoding: `utf8` });
     Trace({ "npmrc template": npmrc }, true);
 
     npmrc = npmrc
@@ -122,14 +128,14 @@ async function setNpmrc({ localRoot, codeLocation, npmConfig }) {
     let npmrcFile = path.join(codeLocation, `.npmrc`);
     Debug(`Writing to ${npmrcFile}`);
 
-    await fs.writeFile(npmrcFile, npmrc, { encoding: `utf8` });
+    await fs.promises.writeFile(npmrcFile, npmrc, { encoding: `utf8` });
 }
 
 function runNpm(localRoot, codeLocation, npmRequires) {
     // Make sure the directories exist that referenced in NPMRC
     Trace(`Create the .npmrc-referenced directories`);
-    return fs.ensureDir(path.join(localRoot, `npmConfig`, `cache`))
-        .then(() => fs.ensureDir(path.join(localRoot, `home`)))
+    return CreatePathParts(path.join(localRoot, `npmConfig`, `cache`))
+        .then(() => CreatePathParts(path.join(localRoot, `home`)))
         .then(() => {
             Dev(`...created`);
 

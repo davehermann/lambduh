@@ -166,7 +166,7 @@ For each function:
         "iamRoleArn": "arn:aws:iam::1234567890:role/primaryRoleName",
         "memorySize": 256,
         "timeout": 10,
-        "runtime": "nodejs8.10"
+        "runtime": "nodejs12.x"
     },
     "functions": [
         { "name": "lambdaFunction1", "source": "/path/to/function1.js" },
@@ -176,9 +176,10 @@ For each function:
             "iamRoleArn": "arn:aws:iam::1234567890:role/alternateRoleName",
             "memorySize": 1024,
             "timeout": 5,
-            "runtime": "nodejs6.10",
+            "runtime": "nodejs10.x",
             "handler": "main"
-        }
+        },
+        { "name": "lambdaFunction3", "source": "/path/to/function3.js" }
     ]
 }
 ```
@@ -192,14 +193,16 @@ For each function:
     + Set the IAM role for the function to: **arn:aws:iam::1234567890:role/primaryRoleName**
     + Set the memory size to: **256 MB**
     + Set the timeout to: **10 seconds**
-    + Set the runtime to: Lambda's **NodeJS 8** version
+    + Set the runtime to: Lambda's **NodeJS 12** version
 + Create a Lambda function named `ld_MyApplication_lambdaFunction2`
     + Bundle `path/to/function2.js` (and dependencies/node_modules)
     + Set the handler to: **path/to/function2.main**
     + Set the IAM role for the function to: **arn:aws:iam::1234567890:role/alternateRoleName**
     + Set the memory size to: **1024 MB**
     + Set the timeout to: **5 seconds**
-    + Set the runtime to: Lambda's **NodeJS 6** version
+    + Set the runtime to: Lambda's **NodeJS 10** version
++ Create a Lambda function named `ld_MyApplication_lambdaFunction3`
+    + **Uses the same *default* settings as `ld_MyApplication_lambdaFunction1` above**
 
 
 #### Usage
@@ -229,7 +232,7 @@ For each function:
 Properties than can be set on the `default` object, are noted as "In Default" in the table
 :::
 
-### API Gateway Tasks
+### API Gateway (REST APIs) Tasks
 
 + Create an API using the application name defined at the root of the configuration
 + Create resources and methods for API endpoints
@@ -294,7 +297,7 @@ Properties than can be set on the `default` object, are noted as "In Default" in
             + **requestor is <u>always</u> included**, with the IP address and User Agent string for the request
     + Add a 200 response to the integration response
     + Add a 200 response to the method response
-    + Create a Lambda **function version** for `lambdaFunction2` with the alias of `yourStageName`
++ Create a Lambda **function version** for `lambdaFunction2` with the alias of `yourStageName`
     + Integrate the method with Lambda function *ld_MyApplication_lambdaFunction2:yourStageName*
         + Add the IAM permission necessary to run *ld_MyApplication_lambdaFunction2:yourStageName* in Lambda from this method in API Gateway
 + Create an OPTIONS method for `/request/path/from/root/{optionalParameters}`
@@ -356,4 +359,83 @@ Both arrays have the same expected signature for values:
 The `endpointConfiguration:{}` map will be added as-is to the event data under an `endpointConfiguration` property.
 This can be used to pass route constants defined in API Gateway to Lambda functions, for instance when one function backs multiple routes with differing configurations
 
+### API Gateway V2 (Websockets APIs) Tasks
 
++ Create a **websocket** API using the application name defined at the root of the configuration
++ Create routes
++ Version Lambda functions attached to the routes
+    + Will also version defined Lambda functions that are not deployed as routes
++ Create deployment stages, and deploy those stages
+
+#### Structure
+```json
+{
+    "disabled": false,
+    "type": "ApiGatewayV2",
+    "deployment": {
+        "stage": "yourStageName",
+        "production": true,
+        "versioningLimits": {
+            "keep": 2,
+            "expirationHours": 6
+        },
+    },
+    "aliasNonRoutes": [
+        { "functionName": "lambdaFunction1" }
+    ],
+    "routeSelectionExpress": "$request.body.routeId",
+    "routes": [
+        {
+            "key": "$default",
+            "functionName": "lambdaFunction2"
+        },
+        {
+            "key": "app-route-1",
+            "functionName": "lambdaFunction3"
+        }
+    ]
+}
+```
+
+##### What does this structure do?
+
++ Create a Websocket API named `MyApplication`
+    + *Per the **applicationName** property in [Root Structure](#basic-structure) above*
++ Set the route selection expression for the API to `$request.body.routeId`
++ Create a Lambda **function version** for `lambdaFunction1` with the alias of `yourStageName`
++ Create a Lambda **function version** for `lambdaFunction2` with the alias of `yourStageName`
++ Create a Lambda **function version** for `lambdaFunction3` with the alias of `yourStageName`
++ Create the special route `$default`, which API Gateway uses for all unmatched routes
+    + Integrate `lambdaFunction2` with the `$default` route
++ Create a route `app-route-1`
+    + Integrate `lambdaFunction3` with `app-route-1`
++ Creates the stage deployment named `yourStageName`
+
+#### Usage
+
+| Property | Required | Type | Description |
+| -------- |:--------:|:----:| ----------- |
+| type | yes | String | **ApiGatewayV2** for this task |
+| disabled | no | Boolean | Is the task disabled?<br />*Will be skipped if `true`*<br /><br />*Default:* **false** |
+| deployment | yes | Map | Values for deploying to a stage, and versioning Lambda functions |
+| deployment<br />&nbsp;&nbsp;&nbsp;&nbsp;.stage | yes | String | Name of stage to deploy |
+| deployment<br />&nbsp;&nbsp;&nbsp;&nbsp;.production | no | Boolean | If **true**, sets a unique version code as part of the versioning step |
+| deployment<br />&nbsp;&nbsp;&nbsp;&nbsp;.versioningLimits | no | Map | Control number of versions to maintain<br />*When **deployment.production** == **true***<br /><br />This allows for deploying a production stage with new code, and without breaking a deployed in-use frontend |
+| deployment<br />&nbsp;&nbsp;&nbsp;&nbsp;.versioningLimits<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.keep | no | Number | # of versions to maintain when deploying the same stage |
+| deployment<br />&nbsp;&nbsp;&nbsp;&nbsp;.versioningLimits<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.expirationHours | no | Number | Time, in hours, for expiring a version <ul><li>*Expiration time takes precedence over # to **keep***</li><li>*Lamb-duh <u>will not</u> delete a version until it has expired, even if there are more versions than the maximum to keep*</li></ul> |
+| aliasNonRoutes | no | Array&lt;Map&gt; | The set of non-route Lambda functions to version<br/><br />*See [Non-route definition](#non-route-definition)* for available properties |
+| routes | no | Array&lt;Map&gt; | The set of routes to deploy<br/><br />*See [Route definition](#route-definition)* for available properties |
+
+##### Non-route definition
+
+| Property | Required | Type | Description |
+| -------- |:--------:|:----:| ----------- |
+| functionName | yes | String | Name of function, in Lambda, to alias |
+
+
+##### Route definition
+
+| Property | Required | Type | Description |
+| -------- |:--------:|:----:| ----------- |
+| key | yes | String | The route key to match in the websocket data |
+| functionName | yes | String | Name of function, in Lambda, to alias |

@@ -174,3 +174,4 @@ module.exports.AddLambdaIntegration = addLambdaIntegrationRequest;
 module.exports.SetLambdaIntegrationFunction = setIntegrationRequestToLambdaFunctionWithPredefinedTemplate;
 module.exports.AddMockIntegration = addMockIntegrationRequest;
 module.exports.GetExistingIntegration = getIntegrationRequest;
+module.exports.GetVersionUri = generateVersionUri;

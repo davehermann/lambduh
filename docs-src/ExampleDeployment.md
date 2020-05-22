@@ -6,7 +6,11 @@ A deployment example is available in the [Lamb-duh project's ./example directory
 Before trying this example, make sure you have completed configuring AWS for Lamb-duh, either via the [CLI utility automated method](/CLI.md#initial-aws-configuration-automated) or the [manual method](./ManualConfiguration.md#iam-configuration)
 :::
 
-## Whats in the example?
+:::warning API Example
+This example deploys a [REST API](./LambduhConfiguration.md#api-gateway-rest-apis-tasks)
+:::
+
+## What's in the example?
 
 The example contains:
 + A file to deploy to S3 (`./src/frontend/index.html`)
