@@ -6,7 +6,7 @@
     "main": "deploy.js",
     "dependencies": {
         "builtin-modules": "^3.0.0",
-        "jszip": "^3.1.5",
+        "jszip": "^3.7.0",
         "luxon": "^1.11.1",
         "mime-types": "^2.1.21",
         "tar": "^4.4.8",
